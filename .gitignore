@@ -1,0 +1,52 @@
+# ============================================
+# STM32 / Keil MDK 项目 .gitignore
+# ============================================
+
+# Keil 编译输出目录
+Output/
+*.o
+*.d
+*.axf
+*.hex
+*.bin
+*.map
+*.htm
+*.lnp
+*.sct
+*.dep
+*.lst
+*.crf
+*.bak
+*.uvguix.*
+*.uvoptx
+*.uvprojx.bak
+
+# Keil 临时文件
+*.uvgui
+*.uvopt
+*.scvd
+JLinkLog.txt
+JLinkSettings.ini
+
+# 调试文件
+*.elf
+*.out
+
+# Windows 系统文件
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS 系统文件
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE 文件
+.vscode/
+.idea/
+*.suo
+*.user
+
+# 日志文件
+*.log
