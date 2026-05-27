@@ -32,6 +32,9 @@ JLinkSettings.ini
 *.elf
 *.out
 
+# ESP32-S3 IDF 编译输出
+esp32s3_wifi/build/
+
 # Windows 系统文件
 Thumbs.db
 Desktop.ini
@@ -39,8 +42,6 @@ $RECYCLE.BIN/
 
 # macOS 系统文件
 .DS_Store
-.AppleDouble
-.LSOverride
 
 # IDE 文件
 .vscode/

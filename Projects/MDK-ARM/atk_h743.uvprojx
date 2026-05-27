@@ -339,7 +339,7 @@
               <MiscControls>--diag_suppress=68 --diag_suppress=111 --diag_suppress=188 --diag_suppress=223 --diag_suppress=546  --diag_suppress=1295 --locale=english --diag_suppress=550</MiscControls>
               <Define>USE_HAL_DRIVER,STM32H743xx</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\Drivers\CMSIS\Device\ST\STM32H7xx\Include;..\..\Drivers\STM32H7xx_HAL_Driver\Inc;..\..\Drivers\CMSIS\Include;..\..\Middlewares;..\..\Drivers;..\..\User;..\..\Middlewares\LVGL\GUI;..\..\Middlewares\LVGL\GUI\lvgl;..\..\Middlewares\LVGL\GUI\lvgl\src;..\..\Middlewares\LVGL\GUI\lvgl\examples\porting;..\..\Middlewares\LVGL\GUI_APP\demos\music;..\..\Middlewares\LVGL\GUI_APP;..\..\Middlewares\LVGL\GUI_APP\Player;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage\assets;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader\assets;..\..\Middlewares\FatFS;..\..\Drivers\BSP\SDCARD</IncludePath>
+              <IncludePath>..\..\Drivers\CMSIS\Device\ST\STM32H7xx\Include;..\..\Drivers\STM32H7xx_HAL_Driver\Inc;..\..\Drivers\CMSIS\Include;..\..\Middlewares;..\..\Drivers;..\..\User;..\..\Middlewares\LVGL\GUI;..\..\Middlewares\LVGL\GUI\lvgl;..\..\Middlewares\LVGL\GUI\lvgl\src;..\..\Middlewares\LVGL\GUI\lvgl\examples\porting;..\..\Middlewares\LVGL\GUI_APP\demos\music;..\..\Middlewares\LVGL\GUI_APP;..\..\Middlewares\LVGL\GUI_APP\Player;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage\assets;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader\assets;..\..\Middlewares\FatFS;..\..\Drivers\BSP\SDCARD;..\..\Drivers\BSP\NTP;..\..\Middlewares\LVGL\GUI\font_sdram</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -543,6 +543,16 @@
               <FileType>1</FileType>
               <FilePath>..\..\Drivers\STM32H7xx_HAL_Driver\Src\stm32h7xx_ll_sdmmc.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32h7xx_hal_rtc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Drivers\STM32H7xx_HAL_Driver\Src\stm32h7xx_hal_rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32h7xx_hal_rtc_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Drivers\STM32H7xx_HAL_Driver\Src\stm32h7xx_hal_rtc_ex.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -623,6 +633,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\Drivers\BSP\SDCARD\sdcard.c</FilePath>
             </File>
+            <File>
+              <FileName>ntp_sync.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Drivers\BSP\NTP\ntp_sync.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -647,6 +662,11 @@
               <FileName>ffunicode.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Middlewares\FatFS\ffunicode.c</FilePath>
+            </File>
+            <File>
+              <FileName>font_sdram.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\LVGL\GUI\font_sdram\font_sdram.c</FilePath>
             </File>
           </Files>
         </Group>

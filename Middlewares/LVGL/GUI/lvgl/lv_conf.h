@@ -55,12 +55,17 @@
 /* 0: 使用标准 `lv_mem_alloc()` 和 `lv_mem_free()`*/
 #define LV_MEM_CUSTOM                       0
 #if LV_MEM_CUSTOM == 0
-    /* `lv_mem_alloc()`可用的总堆大小(单位:字节)(最少 >= 2kB) */
-    #define LV_MEM_SIZE                     (64U * 1024U)          /*[字节]*/ /* 增大为64KB，优化运行效果 */
+    /* `lv_mem_alloc()`可用的总堆大小(单位:字节)(最少 >= 2kB)
+     * 字体bin加载需要约3MB，必须放在SDRAM里
+     * SDRAM布局:
+     *   0xC0000000 ~ 0xC017FFFF  LVGL显示双缓冲 (800*480*2*2 = 1.5MB)
+     *   0xC0200000 ~ 0xC05FFFFF  字体bin原始数据 (4MB，font_sdram.c使用)
+     *   0xC0600000 ~ 0xC1FFFFFF  LVGL堆 (26MB，lv_mem_alloc使用)
+     */
+    #define LV_MEM_SIZE                     (26U * 1024U * 1024U)  /*[字节] 26MB SDRAM堆*/
 
-    /* 设置一个起始地址，用于内存分配区域而不是从堆中分配。
-     * 确保指针指向有效的SRAM或其它内存区域 */
-    #define LV_MEM_ADR                      0     /*0: 自动分配*/
+    /* 把LVGL堆放到SDRAM，避免占用内部SRAM */
+    #define LV_MEM_ADR                      0xC0600000UL           /* SDRAM 6MB偏移处 */
     /* 替换内存分配函数，当LV_MEM_ADR为0时有效 */
     #if LV_MEM_ADR == 0
         //#define LV_MEM_POOL_INCLUDE your_alloc_library  /* 可选: 包含自动分配内存函数的文件 */
@@ -638,13 +643,13 @@
 #endif
 
 /* PNG图像解码支持 */
-#define LV_USE_PNG                          0
+#define LV_USE_PNG                          1
 
 /* BMP图像解码支持 */
-#define LV_USE_BMP                          0
+#define LV_USE_BMP                          1
 
 /* JPEG图像解码支持(单帧版本) */
-#define LV_USE_SJPG                         0
+#define LV_USE_SJPG                         1
 
 /* GIF图像解码支持 */
 #define LV_USE_GIF                          0

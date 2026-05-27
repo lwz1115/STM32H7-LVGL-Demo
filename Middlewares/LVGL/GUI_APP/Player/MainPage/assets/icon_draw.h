@@ -40,6 +40,13 @@ lv_obj_t * draw_wifi_icon(lv_obj_t * parent);
  */
 lv_obj_t * draw_data_icon(lv_obj_t * parent);
 
+/**
+ * @brief 绘制文件图标（文档图标）
+ * @param parent 父对象
+ * @return 返回创建的图标对象
+ */
+lv_obj_t * draw_file_icon(lv_obj_t * parent);
+
 #ifdef __cplusplus
 } /*extern "C"*/
 #endif

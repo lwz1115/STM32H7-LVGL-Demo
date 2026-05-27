@@ -24,6 +24,7 @@
 #include "./SYSTEM/sys/sys.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "./BSP/NTP/ntp_sync.h"     /* NTP时间同步（接收ESP32-S3串口数据） */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -207,6 +208,14 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /* USER CODE BEGIN 1 */
+
+/**
+  * @brief USART2中断处理函数（接收ESP32-S3发来的NTP时间数据）
+  */
+void USART2_IRQHandler(void)
+{
+    HAL_UART_IRQHandler(&g_ntp_uart_handle);
+}
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -10,7 +10,7 @@
 | # | 功能 | 状态 |
 |---|------|------|
 | 1 | 主界面（仿手机桌面，3×3图标网格） | 🔲 开发中 |
-| 2 | 实时时钟（DS1302，NTP自动校时） | 🔲 开发中 |
+| 2 | 实时时钟（ESP32-S3 NTP网络时间） | 🔲 开发中 |
 | 3 | 文本阅读器（SD卡 .txt，UTF-8，书签） | 🔲 开发中 |
 | 4 | 图片浏览器（BMP/JPG，缩略图+全屏） | 🔲 开发中 |
 | 5 | 音乐播放器（WAV/MP3，I2S输出） | 🔲 开发中 |
@@ -49,8 +49,7 @@
 | 项目 | 参数 |
 |------|------|
 | SD卡 | SDMMC1，4线，FAT32，FATFS，驱动字母 'S' |
-| RTC | DS1302，3线串行，CLK=PB9，DAT=PB8，RST=PB7 |
-| WiFi | ESP32-S3，UART AT指令，支持HTTPS/TLS |
+| WiFi | ESP32-S3，UART，NTP时间同步 |
 | 音频 | PCM5102A，I2S接口 |
 | 温湿度 | AHT20，I2C（SCL=PH4，SDA=PH5） |
 
@@ -76,7 +75,35 @@
 | 颜色深度 | RGB565（16位） |
 | 刷新周期 | 8ms |
 | GPU加速 | DMA2D 已启用 |
-| LVGL堆 | 64KB（内部SRAM） |
+| LVGL堆 | 26MB（SDRAM 0xC0600000） |
+| 中文字体 | SimHei 16px，完整GB2312，从SD卡加载到SDRAM |
+
+---
+
+## SD卡必要文件
+
+以下文件需要放在SD卡根目录，否则中文无法显示：
+
+| 文件名 | 大小 | 说明 |
+|--------|------|------|
+| `simhei_16.bin` | ~2.6MB | 完整中文字体（GB2312 + ASCII），由 lv_font_conv 生成 |
+
+### 生成字体文件的方法
+
+```bash
+npm install -g lv_font_conv
+lv_font_conv --font "C:\Windows\Fonts\simhei.ttf" -r 0x20-0x7F -r 0x4E00-0x9FA5 --size 16 --bpp 4 --format bin -o simhei_16.bin --no-compress
+```
+
+生成后把 `simhei_16.bin` 复制到SD卡根目录即可。
+
+### SDRAM 内存布局
+
+```
+0xC0000000  LVGL 显示缓冲区（约 160KB，100行×800像素×2字节）
+0xC0200000  字体 bin 原始数据（font_sdram.c 读取区，最大4MB）
+0xC0600000  LVGL 堆（26MB，lv_mem_alloc 使用）
+```
 
 ---
 
@@ -84,7 +111,7 @@
 
 ```
 ├── Drivers/
-│   ├── BSP/          # 板级驱动（LCD、触摸、SDRAM、DS1302等）
+│   ├── BSP/          # 板级驱动（LCD、触摸、SDRAM、NTP等）
 │   ├── CMSIS/        # ARM CMSIS 接口层
 │   ├── STM32H7xx_HAL_Driver/  # ST HAL 库
 │   └── SYSTEM/       # 系统基础功能
@@ -120,7 +147,7 @@
 - [x] SDRAM 初始化
 - [x] 音乐播放器 Demo（LVGL 官方示例）
 - [ ] FreeRTOS 集成
-- [ ] DS1302 RTC 驱动
+- [ ] ESP32-S3 NTP时间同步
 - [ ] FATFS + SD卡
 - [ ] 主界面 UI 设计
 - [ ] 各功能模块开发

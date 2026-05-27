@@ -6,37 +6,56 @@
 #include "./BSP/KEY/key.h"
 #include "./BSP/MPU/mpu.h"
 #include "./BSP/TIMER/btim.h"
-
-/* LVGL */
+#include "./BSP/NTP/ntp_sync.h"
+#include "./BSP/SDCARD/sdcard.h"    /* SD卡驱动 */
+#include "ff.h"                     /* FatFS */
 #include "lvgl.h"
 #include "lv_port_indev_template.h"
 #include "lv_port_disp_template.h"
 #include "lv_player.h"
+#include "lv_player_main.h"
+#include "font_sdram.h"             /* SDRAM字体加载 */
 
+static FATFS g_fatfs;   /* FatFS文件系统对象，全局保持挂载状态 */
 
 int main(void)
 {
-    sys_cache_enable();                                         /* 使能 L1-Cache */
-    HAL_Init();                                                 /* 初始化 HAL 库 */
-    sys_stm32_clock_init(192, 5, 2, 4);                         /* 配置时钟, 480Mhz */
-    delay_init(480);                                            /* 延时初始化 */
-    usart_init(115200);                                         /* 串口初始化 */
-    mpu_memory_protection();                                    /* 保护内存存储区域 */
-    led_init();                                                 /* 初始化 LED */
-    key_init();                                                 /* 初始化 KEY */
-    sdram_init();                                               /* 初始化 SDRAM */
-    btim_timx_int_init(100-1,2400-1);                           /* 初始化定时器 */
+    sys_cache_enable();
+    HAL_Init();
+    sys_stm32_clock_init(192, 5, 2, 4);
+    delay_init(480);
+    usart_init(115200);
+    mpu_memory_protection();
+    led_init();
+    key_init();
+    sdram_init();
+    btim_timx_int_init(100-1, 2400-1);
+    ntp_sync_init();
 
-    lv_init();                                                  /* lvgl 系统初始化 */
-    lv_port_disp_init();                                        /* lvgl 显示接口初始化，需要在 lv_init() 之后调用 */
-    lv_port_indev_init();                                       /* lvgl 输入接口初始化，需要在 lv_init() 之后调用 */
-    
-    lv_player();                                                /* 播放 Player 界面 */
-    
+    /* SD卡初始化 + FatFS挂载（驱动字母 S:） */
+    if (sd_init() == SD_OK) {
+        if (f_mount(&g_fatfs, "S:", 1) == FR_OK) {
+            printf("SD卡挂载成功\r\n");
+        } else {
+            printf("FatFS挂载失败\r\n");
+        }
+    } else {
+        printf("SD卡初始化失败\r\n");
+    }
+
+    lv_init();
+    lv_port_disp_init();
+    lv_port_indev_init();
+
+    /* 从SD卡加载完整中文字体到SDRAM */
+    font_sdram_init();
+
+    lv_player();
+
     while (1)
     {
         lv_task_handler();
+        ntp_sync_process();
         delay_ms(5);
     }
 }
-

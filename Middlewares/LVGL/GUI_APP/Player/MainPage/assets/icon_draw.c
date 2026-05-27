@@ -234,3 +234,69 @@ lv_obj_t * draw_data_icon(lv_obj_t * parent)
     
     return canvas_obj;
 }
+
+/**
+ * @brief 绘制文件图标（文档图标）
+ * @param parent 父对象
+ * @return 返回创建的图标对象
+ */
+lv_obj_t * draw_file_icon(lv_obj_t * parent)
+{
+    /* 创建画布容器 */
+    lv_obj_t * canvas_obj = lv_obj_create(parent);
+    lv_obj_set_size(canvas_obj, 24, 28);  /* 文件图标大小 24x28 */
+    lv_obj_set_style_bg_opa(canvas_obj, LV_OPA_TRANSP, 0);  /* 透明背景 */
+    lv_obj_set_style_border_width(canvas_obj, 0, 0);
+    lv_obj_set_style_pad_all(canvas_obj, 0, 0);
+    lv_obj_clear_flag(canvas_obj, LV_OBJ_FLAG_SCROLLABLE);
+    
+    /* 绘制文件主体 */
+    lv_obj_t * file_body = lv_obj_create(canvas_obj);
+    lv_obj_set_size(file_body, 20, 24);
+    lv_obj_align(file_body, LV_ALIGN_BOTTOM_LEFT, 0, 0);
+    lv_obj_set_style_bg_opa(file_body, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(file_body, 2, 0);
+    lv_obj_set_style_border_color(file_body, lv_color_hex(0x666666), 0);  /* 深灰色边框 */
+    lv_obj_set_style_radius(file_body, 2, 0);
+    lv_obj_clear_flag(file_body, LV_OBJ_FLAG_SCROLLABLE);
+    
+    /* 绘制折角 */
+    lv_obj_t * corner = lv_obj_create(canvas_obj);
+    lv_obj_set_size(corner, 6, 6);
+    lv_obj_align(corner, LV_ALIGN_TOP_RIGHT, 0, 0);
+    lv_obj_set_style_bg_color(corner, lv_color_hex(0x666666), 0);
+    lv_obj_set_style_bg_opa(corner, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(corner, 0, 0);
+    lv_obj_set_style_radius(corner, 0, 0);
+    lv_obj_clear_flag(corner, LV_OBJ_FLAG_SCROLLABLE);
+    
+    /* 绘制文件内容线条 */
+    lv_obj_t * line1 = lv_obj_create(file_body);
+    lv_obj_set_size(line1, 12, 2);
+    lv_obj_align(line1, LV_ALIGN_TOP_MID, 0, 6);
+    lv_obj_set_style_bg_color(line1, lv_color_hex(0x666666), 0);
+    lv_obj_set_style_bg_opa(line1, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(line1, 0, 0);
+    lv_obj_set_style_radius(line1, 1, 0);
+    lv_obj_clear_flag(line1, LV_OBJ_FLAG_SCROLLABLE);
+    
+    lv_obj_t * line2 = lv_obj_create(file_body);
+    lv_obj_set_size(line2, 12, 2);
+    lv_obj_align(line2, LV_ALIGN_TOP_MID, 0, 11);
+    lv_obj_set_style_bg_color(line2, lv_color_hex(0x666666), 0);
+    lv_obj_set_style_bg_opa(line2, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(line2, 0, 0);
+    lv_obj_set_style_radius(line2, 1, 0);
+    lv_obj_clear_flag(line2, LV_OBJ_FLAG_SCROLLABLE);
+    
+    lv_obj_t * line3 = lv_obj_create(file_body);
+    lv_obj_set_size(line3, 12, 2);
+    lv_obj_align(line3, LV_ALIGN_TOP_MID, 0, 16);
+    lv_obj_set_style_bg_color(line3, lv_color_hex(0x666666), 0);
+    lv_obj_set_style_bg_opa(line3, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(line3, 0, 0);
+    lv_obj_set_style_radius(line3, 1, 0);
+    lv_obj_clear_flag(line3, LV_OBJ_FLAG_SCROLLABLE);
+    
+    return canvas_obj;
+}

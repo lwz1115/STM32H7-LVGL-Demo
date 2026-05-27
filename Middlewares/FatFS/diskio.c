@@ -8,6 +8,7 @@
 #include "ff.h"
 #include "diskio.h"
 #include "./BSP/SDCARD/sdcard.h"
+#include "./BSP/NTP/ntp_sync.h"
 #include <string.h>
 
 /* 物理驱动器编号 */
@@ -80,7 +81,24 @@ DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count)
     switch (pdrv)
     {
         case DEV_SD:
-            if (sd_read_disk(buff, sector, count) == SD_OK)
+            /* STM32H7 D-Cache 要求 DMA 缓冲区 4 字节对齐
+             * FatFs 有时传入非对齐地址，需要用临时缓冲区中转 */
+            if ((uint32_t)buff & 0x03)
+            {
+                static uint8_t scratch[512] __attribute__((aligned(4)));
+                while (count--)
+                {
+                    if (sd_read_disk(scratch, sector++, 1) != SD_OK)
+                    {
+                        res = RES_ERROR;
+                        break;
+                    }
+                    memcpy(buff, scratch, 512);
+                    buff += 512;
+                    res = RES_OK;
+                }
+            }
+            else if (sd_read_disk(buff, sector, count) == SD_OK)
             {
                 res = RES_OK;
             }
@@ -172,15 +190,9 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void *buff)
                     break;
                     
                 case GET_BLOCK_SIZE:
-                    if (sd_get_card_info(&cardinfo) == SD_OK)
-                    {
-                        *(DWORD *)buff = cardinfo.LogBlockSize;
-                        res = RES_OK;
-                    }
-                    else
-                    {
-                        res = RES_ERROR;
-                    }
+                    /* FatFs 要求返回以扇区为单位的擦除块大小，SD卡固定为 1 */
+                    *(DWORD *)buff = 1;
+                    res = RES_OK;
                     break;
                     
                 default:
@@ -198,27 +210,19 @@ DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void *buff)
 }
 
 /**
- * @brief  获取当前时间（用于文件时间戳）
- * @param  无
- * @retval 当前时间（FAT格式）
+ * @brief  获取当前时间（用于文件时间戳，从RTC读取）
  */
 DWORD get_fattime(void)
 {
-    /* 返回当前时间
-     * bit31:25 - 年份(0-127, 从1980年开始)
-     * bit24:21 - 月份(1-12)
-     * bit20:16 - 日期(1-31)
-     * bit15:11 - 小时(0-23)
-     * bit10:5  - 分钟(0-59)
-     * bit4:0   - 秒/2(0-29)
-     */
-    
-    /* 这里返回固定时间2024-01-01 00:00:00
-     * 实际应用中应该从RTC获取真实时间 */
-    return ((DWORD)(2024 - 1980) << 25)  /* 年份: 2024 */
-         | ((DWORD)1 << 21)              /* 月份: 1 */
-         | ((DWORD)1 << 16)              /* 日期: 1 */
-         | ((DWORD)0 << 11)              /* 小时: 0 */
-         | ((DWORD)0 << 5)               /* 分钟: 0 */
-         | ((DWORD)0 >> 1);              /* 秒: 0 */
+    ntp_time_t t;
+    if (ntp_sync_get_time(&t)) {
+        return ((DWORD)(t.year - 1980) << 25)
+             | ((DWORD)t.month        << 21)
+             | ((DWORD)t.date         << 16)
+             | ((DWORD)t.hour         << 11)
+             | ((DWORD)t.minute       << 5)
+             | ((DWORD)t.second       >> 1);
+    }
+    /* RTC未同步时返回固定时间 */
+    return ((DWORD)(2026 - 1980) << 25) | ((DWORD)1 << 21) | ((DWORD)1 << 16);
 }

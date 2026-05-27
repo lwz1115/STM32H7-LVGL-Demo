@@ -151,28 +151,32 @@ uint8_t sd_read_disk(uint8_t *buf, uint32_t sector, uint32_t cnt)
 {
     uint8_t res = SD_OK;
     uint32_t timeout = 0;
-    
-    /* 读取数据 */
+
     if (HAL_SD_ReadBlocks(&hsd1, buf, sector, cnt, 1000) != HAL_OK)
     {
         res = SD_ERROR;
     }
     else
     {
-        /* 等待传输完成 */
         timeout = 1000;
         while ((HAL_SD_GetCardState(&hsd1) != HAL_SD_CARD_TRANSFER) && timeout)
         {
             timeout--;
             delay_ms(1);
         }
-        
+
         if (timeout == 0)
         {
             res = SD_TIMEOUT;
         }
+        else
+        {
+            /* H743 开启了 D-Cache，DMA 传输完成后必须刷新缓存
+             * 否则 CPU 读到的是 Cache 中的旧数据而不是 DMA 写入的新数据 */
+            SCB_InvalidateDCache_by_Addr((uint32_t *)buf, cnt * 512);
+        }
     }
-    
+
     return res;
 }
 
