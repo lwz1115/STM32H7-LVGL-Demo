@@ -339,7 +339,7 @@
               <MiscControls>--diag_suppress=68 --diag_suppress=111 --diag_suppress=188 --diag_suppress=223 --diag_suppress=546  --diag_suppress=1295 --locale=english --diag_suppress=550</MiscControls>
               <Define>USE_HAL_DRIVER,STM32H743xx</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\Drivers\CMSIS\Device\ST\STM32H7xx\Include;..\..\Drivers\STM32H7xx_HAL_Driver\Inc;..\..\Drivers\CMSIS\Include;..\..\Middlewares;..\..\Drivers;..\..\User;..\..\Middlewares\LVGL\GUI;..\..\Middlewares\LVGL\GUI\lvgl;..\..\Middlewares\LVGL\GUI\lvgl\src;..\..\Middlewares\LVGL\GUI\lvgl\examples\porting;..\..\Middlewares\LVGL\GUI_APP\demos\music;..\..\Middlewares\LVGL\GUI_APP;..\..\Middlewares\LVGL\GUI_APP\Player;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage\assets;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader\assets;..\..\Middlewares\FatFS;..\..\Drivers\BSP\SDCARD;..\..\Drivers\BSP\NTP;..\..\Middlewares\LVGL\GUI\font_sdram</IncludePath>
+              <IncludePath>..\..\Drivers\CMSIS\Device\ST\STM32H7xx\Include;..\..\Drivers\STM32H7xx_HAL_Driver\Inc;..\..\Drivers\CMSIS\Include;..\..\Middlewares;..\..\Drivers;..\..\User;..\..\Middlewares\LVGL\GUI;..\..\Middlewares\LVGL\GUI\lvgl;..\..\Middlewares\LVGL\GUI\lvgl\src;..\..\Middlewares\LVGL\GUI\lvgl\examples\porting;..\..\Middlewares\LVGL\GUI_APP\demos\music;..\..\Middlewares\LVGL\GUI_APP;..\..\Middlewares\LVGL\GUI_APP\Player;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage\assets;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader\assets;..\..\Middlewares\FatFS;..\..\Drivers\BSP\SDCARD;..\..\Drivers\BSP\NTP;..\..\Middlewares\LVGL\GUI\font_sdram;..\..\Middlewares\LVGL\GUI_APP\Player\BootScreen;..\..\Middlewares\LVGL\GUI_APP\Player\PhotoViewer</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1567,6 +1567,16 @@
               <FileName>lv_text_reader.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Middlewares\LVGL\GUI_APP\Player\TextReader\lv_text_reader.c</FilePath>
+            </File>
+            <File>
+              <FileName>lv_boot_screen.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\LVGL\GUI_APP\Player\BootScreen\lv_boot_screen.c</FilePath>
+            </File>
+            <File>
+              <FileName>lv_photo_viewer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\LVGL\GUI_APP\Player\PhotoViewer\lv_photo_viewer.c</FilePath>
             </File>
             <File>
               <FileName>app_icons.c</FileName>

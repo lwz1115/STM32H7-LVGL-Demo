@@ -221,7 +221,7 @@
  *-----------*/
 
 /* 启用日志记录 */
-#define LV_USE_LOG                          0
+#define LV_USE_LOG                          1
 #if LV_USE_LOG
 
     /*日志记录详细程度:
@@ -231,11 +231,11 @@
     *LV_LOG_LEVEL_ERROR       记录致命错误
     *LV_LOG_LEVEL_USER        记录用户自定义消息
     *LV_LOG_LEVEL_NONE        不记录任何信息*/
-    #define LV_LOG_LEVEL LV_LOG_LEVEL_WARN
+    #define LV_LOG_LEVEL LV_LOG_LEVEL_USER
 
     /*1: 使用'printf'打印日志;
      *0: 需要使用 'lv_log_register_print_cb()' 注册自定义打印回调 */
-    #define LV_LOG_PRINTF                   0
+    #define LV_LOG_PRINTF                   1
 
     /* 启用/禁用LV_LOG_TRACE日志的详细信息 */
     #define LV_LOG_TRACE_MEM                1
@@ -360,15 +360,15 @@
  * 字体来源: https://fonts.google.com/specimen/Montserrat */
 #define LV_FONT_MONTSERRAT_8                0
 #define LV_FONT_MONTSERRAT_10               0
-#define LV_FONT_MONTSERRAT_12               1
-#define LV_FONT_MONTSERRAT_14               1
-#define LV_FONT_MONTSERRAT_16               1
+#define LV_FONT_MONTSERRAT_12               1   /* performance_monitor.c */
+#define LV_FONT_MONTSERRAT_14               1   /* LV_FONT_DEFAULT，LVGL内部控件必须 */
+#define LV_FONT_MONTSERRAT_16               1   /* 状态栏日期、font_sdram回退 */
 #define LV_FONT_MONTSERRAT_18               0
-#define LV_FONT_MONTSERRAT_20               1
+#define LV_FONT_MONTSERRAT_20               0   /* 无引用，已删除 */
 #define LV_FONT_MONTSERRAT_22               0
-#define LV_FONT_MONTSERRAT_24               1
+#define LV_FONT_MONTSERRAT_24               0   /* 无引用，已删除 */
 #define LV_FONT_MONTSERRAT_26               0
-#define LV_FONT_MONTSERRAT_28               1
+#define LV_FONT_MONTSERRAT_28               0   /* 无引用，已删除 */
 #define LV_FONT_MONTSERRAT_30               0
 #define LV_FONT_MONTSERRAT_32               0
 #define LV_FONT_MONTSERRAT_34               0
@@ -378,13 +378,13 @@
 #define LV_FONT_MONTSERRAT_42               0
 #define LV_FONT_MONTSERRAT_44               0
 #define LV_FONT_MONTSERRAT_46               0
-#define LV_FONT_MONTSERRAT_48               1
+#define LV_FONT_MONTSERRAT_48               1   /* 时钟数字大字体 */
 
 /* 其他专用字体 */
 #define LV_FONT_MONTSERRAT_12_SUBPX         0
 #define LV_FONT_MONTSERRAT_28_COMPRESSED    0  /* bpp = 3 */
 #define LV_FONT_DEJAVU_16_PERSIAN_HEBREW    0  /* 希伯来语、波斯语、阿拉伯语等支持`unicode`范围 */
-#define LV_FONT_SIMSUN_16_CJK               1  /* 1000多个常用CJK字符集字体 */
+#define LV_FONT_SIMSUN_16_CJK               0  /* 已由SD卡字库(simhei_16.bin)替代，节省约1MB Flash */
 
 /* 默认的UNSCII字体 */
 #define LV_FONT_UNSCII_8                    0

@@ -10,12 +10,7 @@
 
 #if LV_USE_FS_FATFS
 #include "ff.h"
-/* 添加其他头文件 */
-#include "./BSP/LED/led.h"
 #include <stdio.h>
-#include "./BSP/SDCARD/sdcard.h"
-/* exfuns.h 可能不存在，先注释掉 */
-/* #include "./FATFS/exfuns/exfuns.h" */
 /*********************
  *      DEFINES
  *********************/
@@ -46,7 +41,7 @@ static lv_fs_res_t fs_dir_close(lv_fs_drv_t * drv, void * dir_p);
 /**********************
  *  STATIC VARIABLES
  **********************/
-static FATFS fs_sd;  /* FatFS文件系统对象 */
+/* fs_sd 已移除：FatFS 挂载由 main.c 统一管理，LVGL 文件系统直接复用 */
 
 /**********************
  *      MACROS
@@ -100,30 +95,8 @@ void lv_fs_fatfs_init(void)
  */
 static void fs_init(void)
 {
-    /*Initialize the SD card and FatFS itself.
-     *Better to do it in your code to keep this library untouched for easy updating*/
-    uint8_t res;
-    
-    /* ��ʼ�� SD ���� FatFS ����
-     * ������Լ��Ŀ�����ɣ�һ���Ժ���� */
-    while (sd_init())               /* ��ʼ�� SD �� */
-    {
-        printf("SD Card Error, Please Check!\r\n");
-        LED0_TOGGLE();
-        HAL_Delay(200);
-    }
-    
-    LED0(0);
-    
-    /* exfuns_init();  */             /* 为 fatfs 相关分配内存，函数不存在，已注释 */
-    res = f_mount(&fs_sd, "0:", 1);  /* 挂载 SD 卡 */
-    
-    if (0 != res)
-    {
-        printf("SD Card Mount Fail, Please Check!\r\n");
-        LED0_TOGGLE();
-        HAL_Delay(200);
-    }
+    /* SD卡和FatFS已在main.c中初始化并挂载到"S:"
+     * 这里不需要重复初始化，LVGL文件系统直接复用已挂载的FatFS实例 */
 }
 
 /**
@@ -145,11 +118,22 @@ static void * fs_open(lv_fs_drv_t * drv, const char * path, lv_fs_mode_t mode)
     FIL * f = lv_mem_alloc(sizeof(FIL));
     if(f == NULL) return NULL;
 
-    FRESULT res = f_open(f, path, flags);
+    /* LVGL 传入的 path 已去掉驱动字母（如 "S:"），只剩 "/simhei_16.bin"
+     * FatFs 需要完整路径，拼回 "S:" 前缀 */
+    char full_path[256];
+    if(path[0] == '/') {
+        /* path = "/xxx" → "S:/xxx" */
+        snprintf(full_path, sizeof(full_path), "%c:%s", LV_FS_FATFS_LETTER, path);
+    } else {
+        snprintf(full_path, sizeof(full_path), "%c:/%s", LV_FS_FATFS_LETTER, path);
+    }
+
+    FRESULT res = f_open(f, full_path, flags);
     if(res == FR_OK) {
         return f;
     }
     else {
+        printf("[lv_fs] f_open failed: %s (err=%d)\r\n", full_path, res);
         lv_mem_free(f);
         return NULL;
     }
@@ -256,7 +240,15 @@ static void * fs_dir_open(lv_fs_drv_t * drv, const char * path)
     DIR * d = lv_mem_alloc(sizeof(DIR));
     if(d == NULL) return NULL;
 
-    FRESULT res = f_opendir(d, path);
+    /* 同 fs_open，拼回驱动字母前缀 */
+    char full_path[256];
+    if(path[0] == '/') {
+        snprintf(full_path, sizeof(full_path), "%c:%s", LV_FS_FATFS_LETTER, path);
+    } else {
+        snprintf(full_path, sizeof(full_path), "%c:/%s", LV_FS_FATFS_LETTER, path);
+    }
+
+    FRESULT res = f_opendir(d, full_path);
     if(res != FR_OK) {
         lv_mem_free(d);
         d = NULL;

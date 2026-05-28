@@ -13,6 +13,7 @@
 #include "assets/icon_draw.h"
 #include "../TextReader/lv_text_reader.h"
 #include "../TextReader/assets/app_icons.h"
+#include "../PhotoViewer/lv_photo_viewer.h"
 #include "font_sdram.h"
 #include <stdio.h>
 
@@ -146,15 +147,15 @@ static void clock_update_cb(lv_timer_t *timer)
 {
     if(g_clock_label == NULL) return;
 
+    char buf[32];
     ntp_time_t t;
-    if(ntp_sync_get_time(&t)) {
-        /* RTC有有效时间，直接显示 */
-        char buf[32];
 
+    if(ntp_sync_get_time(&t)) {
+        /* RTC有有效时间，每秒更新时钟 */
         snprintf(buf, sizeof(buf), "%02d:%02d:%02d", t.hour, t.minute, t.second);
         lv_label_set_text(g_clock_label, buf);
 
-        /* 同步内部软件时钟（供日期进位逻辑使用） */
+        /* 同步内部软件时钟 */
         g_clock.year    = t.year;
         g_clock.month   = t.month;
         g_clock.day     = t.date;
@@ -163,29 +164,42 @@ static void clock_update_cb(lv_timer_t *timer)
         g_clock.minute  = t.minute;
         g_clock.second  = t.second;
 
-        /* 日期和星期（每分钟更新一次，减少刷新开销） */
-        if(t.second == 0) {
-            if(g_date_label != NULL) {
-                snprintf(buf, sizeof(buf), "%d\xe5\xb9\xb4%d\xe6\x9c\x88%d\xe6\x97\xa5",
-                         t.year, t.month, t.date);
-                lv_label_set_text(g_date_label, buf);
-            }
-            if(g_week_label != NULL) {
-                lv_label_set_text(g_week_label, weekday_str[t.day]);
-            }
-            if(g_sb_label != NULL) {
-                snprintf(buf, sizeof(buf), "%02d-%02d %s",
-                         t.month, t.date, weekday_short[t.day]);
-                lv_label_set_text(g_sb_label, buf);
-            }
+        /* 日期和星期：每秒都更新（开销很小，避免显示滞后） */
+        if(g_date_label != NULL) {
+            snprintf(buf, sizeof(buf), "%d\xe5\xb9\xb4%d\xe6\x9c\x88%d\xe6\x97\xa5",
+                     t.year, t.month, t.date);
+            lv_label_set_text(g_date_label, buf);
+        }
+        if(g_week_label != NULL) {
+            lv_label_set_text(g_week_label, weekday_str[t.day]);
+        }
+        if(g_sb_label != NULL) {
+            snprintf(buf, sizeof(buf), "%02d-%02d %s",
+                     t.month, t.date, weekday_short[t.day]);
+            lv_label_set_text(g_sb_label, buf);
         }
     } else {
-        /* RTC尚未同步，软件自增保持界面不卡住 */
+        /* RTC尚未同步，软件自增 */
         sw_clock_tick(&g_clock);
-        char buf[32];
+
         snprintf(buf, sizeof(buf), "%02d:%02d:%02d",
                  g_clock.hour, g_clock.minute, g_clock.second);
         lv_label_set_text(g_clock_label, buf);
+
+        /* 软件时钟也同步更新日期显示 */
+        if(g_date_label != NULL) {
+            snprintf(buf, sizeof(buf), "%d\xe5\xb9\xb4%d\xe6\x9c\x88%d\xe6\x97\xa5",
+                     g_clock.year, g_clock.month, g_clock.day);
+            lv_label_set_text(g_date_label, buf);
+        }
+        if(g_week_label != NULL) {
+            lv_label_set_text(g_week_label, weekday_str[g_clock.weekday]);
+        }
+        if(g_sb_label != NULL) {
+            snprintf(buf, sizeof(buf), "%02d-%02d %s",
+                     g_clock.month, g_clock.day, weekday_short[g_clock.weekday]);
+            lv_label_set_text(g_sb_label, buf);
+        }
     }
 }
 
@@ -201,6 +215,9 @@ static void app_icon_event_cb(lv_event_t *e)
         case 0:  /* 文本阅读器 */
             lv_text_reader_create(NULL);
             lv_text_reader_list_files("S:");
+            break;
+        case 1:  /* 相册浏览器 */
+            lv_photo_viewer_create();
             break;
         default:
             break;
@@ -248,32 +265,54 @@ void lv_player(void)
     lv_obj_align_to(wifi_icon, data_icon, LV_ALIGN_OUT_LEFT_MID, -5, 0);
 
     g_sb_label = lv_label_create(status_bar);
-    lv_label_set_text(g_sb_label, "05-19 Tue");
     lv_obj_set_style_text_color(g_sb_label, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_font(g_sb_label, &lv_font_montserrat_16, 0);
     lv_obj_align(g_sb_label, LV_ALIGN_LEFT_MID, 10, 0);
 
     /* 左侧时钟区域 */
     g_date_label = lv_label_create(main_screen);
-    /* 2026年5月19日 */
-    lv_label_set_text(g_date_label,
-        "2026\xe5\xb9\xb4""5\xe6\x9c\x88""19\xe6\x97\xa5");
     lv_obj_set_style_text_color(g_date_label, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_font(g_date_label, font_sdram_get(), 0);
     lv_obj_align(g_date_label, LV_ALIGN_TOP_LEFT, 30, 30);
 
     g_week_label = lv_label_create(main_screen);
-    /* 星期二 */
-    lv_label_set_text(g_week_label, "\xe6\x98\x9f\xe6\x9c\x9f\xe4\xba\x8c");
     lv_obj_set_style_text_color(g_week_label, lv_color_hex(0xcccccc), 0);
     lv_obj_set_style_text_font(g_week_label, font_sdram_get(), 0);
     lv_obj_align(g_week_label, LV_ALIGN_TOP_LEFT, 30, 55);
 
     g_clock_label = lv_label_create(main_screen);
-    lv_label_set_text(g_clock_label, "15:01:55");
     lv_obj_set_style_text_color(g_clock_label, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_text_font(g_clock_label, &lv_font_montserrat_48, 0);
     lv_obj_align(g_clock_label, LV_ALIGN_TOP_LEFT, 30, 90);
+
+    /* 立即用 RTC 时间初始化标签，避免显示旧的硬编码值 */
+    {
+        char buf[32];
+        ntp_time_t t0;
+        if(ntp_sync_get_time(&t0)) {
+            snprintf(buf, sizeof(buf), "%02d:%02d:%02d", t0.hour, t0.minute, t0.second);
+            lv_label_set_text(g_clock_label, buf);
+            snprintf(buf, sizeof(buf), "%d\xe5\xb9\xb4%d\xe6\x9c\x88%d\xe6\x97\xa5",
+                     t0.year, t0.month, t0.date);
+            lv_label_set_text(g_date_label, buf);
+            lv_label_set_text(g_week_label, weekday_str[t0.day]);
+            snprintf(buf, sizeof(buf), "%02d-%02d %s",
+                     t0.month, t0.date, weekday_short[t0.day]);
+            lv_label_set_text(g_sb_label, buf);
+        } else {
+            /* RTC 未同步，显示软件时钟初始值 */
+            snprintf(buf, sizeof(buf), "%02d:%02d:%02d",
+                     g_clock.hour, g_clock.minute, g_clock.second);
+            lv_label_set_text(g_clock_label, buf);
+            snprintf(buf, sizeof(buf), "%d\xe5\xb9\xb4%d\xe6\x9c\x88%d\xe6\x97\xa5",
+                     g_clock.year, g_clock.month, g_clock.day);
+            lv_label_set_text(g_date_label, buf);
+            lv_label_set_text(g_week_label, weekday_str[g_clock.weekday]);
+            snprintf(buf, sizeof(buf), "%02d-%02d %s",
+                     g_clock.month, g_clock.day, weekday_short[g_clock.weekday]);
+            lv_label_set_text(g_sb_label, buf);
+        }
+    }
 
     /* 右侧应用图标网格 */
     lv_obj_t *app_grid = lv_obj_create(main_screen);

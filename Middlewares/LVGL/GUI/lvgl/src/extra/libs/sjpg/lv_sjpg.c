@@ -51,6 +51,7 @@
 #include "tjpgd.h"
 #include "lv_sjpg.h"
 #include "../../../misc/lv_fs.h"
+#include <stdio.h>
 
 /*********************
  *      DEFINES
@@ -114,7 +115,6 @@ static size_t input_func(JDEC * jd, uint8_t * buff, size_t ndata);
 static int is_jpg(const uint8_t * raw_data);
 static void lv_sjpg_cleanup(SJPEG * sjpeg);
 static void lv_sjpg_free(SJPEG * sjpeg);
-
 /**********************
  *  STATIC VARIABLES
  **********************/
@@ -248,7 +248,9 @@ end:
         else if(!strcmp(&fn[strlen(fn) - 4], ".jpg")) {
             lv_fs_file_t file;
             lv_fs_res_t res = lv_fs_open(&file, fn, LV_FS_MODE_RD);
-            if(res != LV_FS_RES_OK) return 78;
+            if(res != LV_FS_RES_OK) {
+                return 78;
+            }
 
             uint8_t * workb_temp = lv_mem_alloc(TJPGD_WORKBUFF_SIZE);
             if(!workb_temp) {
@@ -273,6 +275,12 @@ end:
                 header->w = jd_tmp.width;
                 header->h = jd_tmp.height;
                 return LV_RES_OK;
+            } else {
+                if(rc == 8) {
+                    printf("[sjpg] Progressive JPEG not supported, convert to Baseline\r\n");
+                } else {
+                    printf("[sjpg] jd_prepare failed rc=%d\r\n", rc);
+                }
             }
         }
     }
@@ -613,24 +621,19 @@ end:
                 return LV_RES_INV;
             }
 
-            SJPEG * sjpeg = (SJPEG *) dsc->user_data;
-            if(sjpeg == NULL) {
-                sjpeg = lv_mem_alloc(sizeof(SJPEG));
-                if(! sjpeg) {
-                    lv_fs_close(&lv_file);
-                    return LV_RES_INV;
-                }
-
-                memset(sjpeg, 0, sizeof(SJPEG));
-                dsc->user_data = sjpeg;
-                sjpeg->sjpeg_data = (uint8_t *)((lv_img_dsc_t *)(dsc->src))->data;
-                sjpeg->sjpeg_data_size = ((lv_img_dsc_t *)(dsc->src))->data_size;
+            SJPEG * sjpeg = lv_mem_alloc(sizeof(SJPEG));
+            if(! sjpeg) {
+                lv_fs_close(&lv_file);
+                return LV_RES_INV;
             }
+            memset(sjpeg, 0, sizeof(SJPEG));
+            dsc->user_data = sjpeg;
 
             uint8_t * workb_temp = lv_mem_alloc(TJPGD_WORKBUFF_SIZE);
             if(! workb_temp) {
                 lv_fs_close(&lv_file);
                 lv_sjpg_cleanup(sjpeg);
+                dsc->user_data = NULL;
                 return LV_RES_INV;
             }
 
@@ -641,63 +644,43 @@ end:
             io_source_temp.lv_file = lv_file;
 
             JDEC jd_tmp;
-
             JRESULT rc = jd_prepare(&jd_tmp, input_func, workb_temp, (size_t)TJPGD_WORKBUFF_SIZE, &io_source_temp);
-
             lv_mem_free(workb_temp);
 
-
             if(rc == JDR_OK) {
-                sjpeg->sjpeg_x_res = jd_tmp.width;
-                sjpeg->sjpeg_y_res = jd_tmp.height;
-                sjpeg->sjpeg_total_frames = 1;
+                sjpeg->sjpeg_x_res               = jd_tmp.width;
+                sjpeg->sjpeg_y_res               = jd_tmp.height;
+                sjpeg->sjpeg_total_frames        = 1;
                 sjpeg->sjpeg_single_frame_height = jd_tmp.height;
+                sjpeg->sjpeg_cache_frame_index   = -1;
 
-                sjpeg->frame_base_array = NULL;
-                sjpeg->frame_base_offset =  lv_mem_alloc(sizeof(uint8_t *) * sjpeg->sjpeg_total_frames);
-                if(! sjpeg->frame_base_offset) {
-                    lv_fs_close(&lv_file);
-                    lv_sjpg_cleanup(sjpeg);
-                    return LV_RES_INV;
-                }
+                sjpeg->frame_base_array  = NULL;
+                sjpeg->frame_base_offset = lv_mem_alloc(sizeof(int) * 1);
+                if(! sjpeg->frame_base_offset) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; return LV_RES_INV; }
+                sjpeg->frame_base_offset[0] = 0;
 
-                int img_frame_start_offset = 0;
-                sjpeg->frame_base_offset[0] = img_frame_start_offset;
+                sjpeg->frame_cache = lv_mem_alloc((size_t)sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 3);
+                if(! sjpeg->frame_cache) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; return LV_RES_INV; }
 
-                sjpeg->sjpeg_cache_frame_index = -1;
-                sjpeg->frame_cache = (void *)lv_mem_alloc(sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 3);
-                if(! sjpeg->frame_cache) {
-                    lv_fs_close(&lv_file);
-                    lv_sjpg_cleanup(sjpeg);
-                    return LV_RES_INV;
-                }
-
-                sjpeg->io.img_cache_buff = sjpeg->frame_cache;
+                sjpeg->io.img_cache_buff  = sjpeg->frame_cache;
                 sjpeg->io.img_cache_x_res = sjpeg->sjpeg_x_res;
-                sjpeg->workb =   lv_mem_alloc(TJPGD_WORKBUFF_SIZE);
-                if(! sjpeg->workb) {
-                    lv_fs_close(&lv_file);
-                    lv_sjpg_cleanup(sjpeg);
-                    return LV_RES_INV;
-                }
 
-                sjpeg->tjpeg_jd =   lv_mem_alloc(sizeof(JDEC));
-                if(! sjpeg->tjpeg_jd) {
-                    lv_fs_close(&lv_file);
-                    lv_sjpg_cleanup(sjpeg);
-                    return LV_RES_INV;
-                }
+                sjpeg->workb = lv_mem_alloc(TJPGD_WORKBUFF_SIZE);
+                if(! sjpeg->workb) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; return LV_RES_INV; }
 
-                sjpeg->io.type = SJPEG_IO_SOURCE_DISK;
+                sjpeg->tjpeg_jd = lv_mem_alloc(sizeof(JDEC));
+                if(! sjpeg->tjpeg_jd) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; return LV_RES_INV; }
+
+                sjpeg->io.type    = SJPEG_IO_SOURCE_DISK;
                 sjpeg->io.lv_file = lv_file;
-                dsc->img_data = NULL;
+                dsc->img_data     = NULL;
                 return LV_RES_OK;
-
             }
             else {
-                if(dsc->user_data) lv_mem_free(dsc->user_data);
                 lv_fs_close(&lv_file);
-                return  LV_RES_INV;
+                lv_sjpg_cleanup(sjpeg);
+                dsc->user_data = NULL;
+                return LV_RES_INV;
             }
         }
     }
@@ -868,7 +851,6 @@ end:
 static void decoder_close(lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc)
 {
     LV_UNUSED(decoder);
-    /*Free all allocated data*/
     SJPEG * sjpeg = (SJPEG *) dsc->user_data;
     if(!sjpeg) return;
 
@@ -887,12 +869,22 @@ static void decoder_close(lv_img_decoder_t * decoder, lv_img_decoder_dsc_t * dsc
         default:
             ;
     }
+    dsc->user_data = NULL;  /* 防止下次 decoder_open 访问野指针 */
 }
 
 static int is_jpg(const uint8_t * raw_data)
 {
-    const uint8_t jpg_signature[] = {0xFF, 0xD8, 0xFF,  0xE0,  0x00,  0x10, 0x4A,  0x46, 0x49, 0x46};
-    return memcmp(jpg_signature, raw_data, sizeof(jpg_signature)) == 0;
+    /* JFIF 格式: FF D8 FF E0 ... JFIF */
+    const uint8_t jfif_sig[] = {0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46};
+    if(memcmp(jfif_sig, raw_data, sizeof(jfif_sig)) == 0) return 1;
+
+    /* EXIF 格式（手机拍照）: FF D8 FF E1 */
+    if(raw_data[0] == 0xFF && raw_data[1] == 0xD8 && raw_data[2] == 0xFF && raw_data[3] == 0xE1) return 1;
+
+    /* 其他 JPEG 变体：只检查 SOI 标记 FF D8 FF */
+    if(raw_data[0] == 0xFF && raw_data[1] == 0xD8 && raw_data[2] == 0xFF) return 1;
+
+    return 0;
 }
 
 static void lv_sjpg_free(SJPEG * sjpeg)

@@ -26,13 +26,21 @@
 #define FONT_SDRAM_MAX_SIZE     (4 * 1024 * 1024)                   /* 最大4MB */
 
 /* SD卡上的字体文件路径 */
-#define FONT_BIN_PATH           "S:/simhei_16.bin"
+#define FONT_BIN_PATH           "S:/FONT/simhei_16.bin"
 
 /**
  * @brief 初始化：从SD卡读取字体bin到SDRAM，并注册到LVGL
  * @retval true: 成功, false: 失败（SD卡无文件或SDRAM不足）
  */
 bool font_sdram_init(void);
+
+/**
+ * @brief 设置进度回调（可选），在加载过程中更新进度条
+ * @param cb  回调函数指针，参数为进度0~100和状态字符串
+ *            传 NULL 取消回调
+ */
+typedef void (*font_progress_cb_t)(uint8_t progress, const char *msg);
+void font_sdram_set_progress_cb(font_progress_cb_t cb);
 
 /**
  * @brief 获取已加载的中文字体指针
