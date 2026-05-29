@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file lv_text_reader.c
  * @brief 文本阅读器 - 文件列表 + 点击打开
  *
@@ -19,12 +19,12 @@
  * 配置
  * ============================================================ */
 #define SD_ROOT_PATH        "S:/TEXT/"
-#define MAX_FILES           64
-#define MAX_FILENAME_LEN    128
-#define MAX_FILENAME_UTF8   256
-#define READ_BUF_SIZE       4096
-#define UTF8_BUF_SIZE       12288   /* GBK转UTF-8最坏情况3倍膨胀，4096*3=12288 */
-#define PAGE_SIZE           4096
+#define MAX_FILES           32      /* 减少：64→32，节省 12KB */
+#define MAX_FILENAME_LEN    96      /* 减少：128→96，节省 2KB */
+#define MAX_FILENAME_UTF8   192     /* 减少：256→192，节省 2KB */
+#define READ_BUF_SIZE       4096    /* 读取缓冲区 */
+#define UTF8_BUF_SIZE       12288   /* UTF-8缓冲区，GBK最坏3倍膨胀：4096*3 */
+#define PAGE_SIZE           4096    /* 每次读取4KB */
 
 /* ============================================================
  * 内部状态
@@ -40,8 +40,9 @@ static char g_filenames[MAX_FILES][MAX_FILENAME_UTF8];
 static char g_filenames_raw[MAX_FILES][MAX_FILENAME_LEN];
 static int  g_file_count = 0;
 
-static char    g_read_buf[READ_BUF_SIZE + 1];
-static char    g_utf8_buf[UTF8_BUF_SIZE];
+/* 大缓冲区放到D2 SRAM（0x30000000，288KB），避免占用D1 SRAM */
+static char    g_read_buf[READ_BUF_SIZE + 1] __attribute__((section(".RAM_D2")));
+static char    g_utf8_buf[UTF8_BUF_SIZE]     __attribute__((section(".RAM_D2")));
 
 static FIL     g_current_file;
 static bool    g_file_opened = false;
@@ -157,7 +158,6 @@ static int convert_first_page(const char *src, int src_len, char *dst, int dst_m
         if (n >= dst_max) n = dst_max - 1;
         memcpy(dst, src + 3, n);
         dst[n] = '\0';
-        printf("[reader] 编码: UTF-8 BOM\r\n");
         /* 检查末尾是否有不完整的UTF-8序列 */
         goto utf8_trim;
     }
@@ -176,7 +176,6 @@ static int convert_first_page(const char *src, int src_len, char *dst, int dst_m
                     if (n >= dst_max) n = dst_max - 1;
                     memcpy(dst, src, n);
                     dst[n] = '\0';
-                    printf("[reader] 编码: UTF-8 (无BOM)\r\n");
                     goto utf8_trim;
                 }
             }
@@ -186,7 +185,6 @@ static int convert_first_page(const char *src, int src_len, char *dst, int dst_m
                 if (n >= dst_max) n = dst_max - 1;
                 memcpy(dst, src, n);
                 dst[n] = '\0';
-                printf("[reader] 编码: UTF-8 (无BOM)\r\n");
                 goto utf8_trim;
             }
         }
@@ -194,42 +192,46 @@ static int convert_first_page(const char *src, int src_len, char *dst, int dst_m
 
     /* 3. GBK */
     g_file_enc = ENC_GBK;
-    printf("[reader] 编码: GBK\r\n");
     return do_gbk_to_utf8(src, src_len, dst, dst_max, 0, &g_gbk_carry);
 
 utf8_trim:
     /* 检查 dst 末尾是否有不完整的 UTF-8 多字节序列，截断并保存到 carry */
     {
-        int len = strlen(dst);
-        /* 从末尾往前找不完整序列 */
-        int i = len - 1;
-        while (i >= 0 && i >= len - 3) {
+        int len = (int)strlen(dst);
+        /* 从末尾往前最多扫 4 个字节，找到序列头字节 */
+        for (int i = len - 1; i >= 0 && i >= len - 4; i--) {
             unsigned char c = (unsigned char)dst[i];
-            if (c >= 0xE0) {
-                /* 3字节序列头，需要后面2个字节 */
-                int need = (c >= 0xF0) ? 3 : 2;
-                int have = len - 1 - i;
-                if (have < need) {
-                    /* 不完整，保存到carry */
+            if (c >= 0xF0) {
+                /* 4字节序列头，需要后面3个续字节 */
+                if (len - 1 - i < 3) {
+                    g_utf8_carry_len = len - i;
+                    memcpy(g_utf8_carry, dst + i, g_utf8_carry_len);
+                    dst[i] = '\0';
+                }
+                break;
+            } else if (c >= 0xE0) {
+                /* 3字节序列头，需要后面2个续字节 */
+                if (len - 1 - i < 2) {
                     g_utf8_carry_len = len - i;
                     memcpy(g_utf8_carry, dst + i, g_utf8_carry_len);
                     dst[i] = '\0';
                 }
                 break;
             } else if (c >= 0xC0) {
-                /* 2字节序列头，需要后面1个字节 */
-                if (i == len - 1) {
+                /* 2字节序列头，需要后面1个续字节 */
+                if (len - 1 - i < 1) {
                     g_utf8_carry_len = 1;
                     g_utf8_carry[0] = c;
                     dst[i] = '\0';
                 }
                 break;
             } else if (c < 0x80) {
-                break; /* ASCII，完整 */
+                /* ASCII字节，序列完整，不需要截断 */
+                break;
             }
-            i--;
+            /* c 是 0x80-0xBF（续字节），继续往前找序列头 */
         }
-        return strlen(dst);
+        return (int)strlen(dst);
     }
 }
 
@@ -240,7 +242,7 @@ static int convert_page(const char *src, int src_len, char *dst, int dst_max)
 {
     if (g_file_enc == ENC_UTF8) {
         /* 先把上页遗留的不完整字节拼到本页开头 */
-        static char tmp[UTF8_BUF_SIZE];
+        static char tmp[UTF8_BUF_SIZE] __attribute__((section(".RAM_D2")));
         int carry = g_utf8_carry_len;
         int total = carry + src_len;
         if (total >= (int)sizeof(tmp)) total = (int)sizeof(tmp) - 1;
@@ -261,31 +263,22 @@ static int convert_page(const char *src, int src_len, char *dst, int dst_max)
 
         /* 检查末尾是否有不完整序列 */
         int len = n;
-        int i = len - 1;
-        while (i >= 0 && i >= len - 3) {
+        for (int i = len - 1; i >= 0 && i >= len - 4; i--) {
             unsigned char c = (unsigned char)dst[i];
-            if (c >= 0xE0) {
-                int need = (c >= 0xF0) ? 3 : 2;
-                int have = len - 1 - i;
-                if (have < need) {
-                    g_utf8_carry_len = len - i;
-                    memcpy(g_utf8_carry, dst + i, g_utf8_carry_len);
-                    dst[i] = '\0';
-                }
+            if (c >= 0xF0) {
+                if (len - 1 - i < 3) { g_utf8_carry_len = len - i; memcpy(g_utf8_carry, dst + i, g_utf8_carry_len); dst[i] = '\0'; }
+                break;
+            } else if (c >= 0xE0) {
+                if (len - 1 - i < 2) { g_utf8_carry_len = len - i; memcpy(g_utf8_carry, dst + i, g_utf8_carry_len); dst[i] = '\0'; }
                 break;
             } else if (c >= 0xC0) {
-                if (i == len - 1) {
-                    g_utf8_carry_len = 1;
-                    g_utf8_carry[0] = c;
-                    dst[i] = '\0';
-                }
+                if (len - 1 - i < 1) { g_utf8_carry_len = 1; g_utf8_carry[0] = c; dst[i] = '\0'; }
                 break;
             } else if (c < 0x80) {
                 break;
             }
-            i--;
         }
-        return strlen(dst);
+        return (int)strlen(dst);
     }
     /* GBK：传入上页遗留的高字节，输出本页遗留的高字节 */
     return do_gbk_to_utf8(src, src_len, dst, dst_max, g_gbk_carry, &g_gbk_carry);
@@ -385,7 +378,6 @@ static void show_file_list(void)
         f_closedir(&dir);
     }
 
-    printf("[reader] 找到 %d 个txt文件\r\n", g_file_count);
 
     if (g_file_count == 0) {
         lv_obj_t *hint = lv_label_create(g_content_area);
@@ -491,7 +483,6 @@ static void show_file_content(const char *filename)
     /* 打开文件 */
     FRESULT res = f_open(&g_current_file, path, FA_READ);
     if (res != FR_OK) {
-        printf("[reader] f_open失败: %s err=%d\r\n", path, res);
         lv_obj_t *err = lv_label_create(g_content_area);
         snprintf(g_utf8_buf, UTF8_BUF_SIZE, "Cannot open: %s (err=%d)", path, res);
         lv_label_set_text(err, g_utf8_buf);
@@ -502,7 +493,6 @@ static void show_file_content(const char *filename)
     g_file_opened = true;
     g_file_size   = f_size(&g_current_file);
     g_current_pos = 0;
-    printf("[reader] 打开: %s 大小=%lu\r\n", path, (uint32_t)g_file_size);
 
     /* 滚动容器 */
     lv_obj_t *scroll_cont = lv_obj_create(g_content_area);
@@ -532,18 +522,11 @@ static void show_file_content(const char *filename)
         g_current_pos = bytes_read;
         g_read_buf[bytes_read] = '\0';
 
-        printf("[reader] 读取%u字节，前4字节: %02X %02X %02X %02X\r\n",
-               bytes_read,
-               (unsigned char)g_read_buf[0], (unsigned char)g_read_buf[1],
-               (unsigned char)g_read_buf[2], (unsigned char)g_read_buf[3]);
-
         int utf8_len = convert_first_page(g_read_buf, (int)bytes_read, g_utf8_buf, UTF8_BUF_SIZE);
-        printf("[reader] 转换后%d字节，编码=%s\r\n",
-               utf8_len, g_file_enc == ENC_UTF8 ? "UTF-8" : "GBK");
+        (void)utf8_len;
 
         lv_label_set_text(g_text_label, g_utf8_buf);
     } else {
-        printf("[reader] f_read失败: res=%d bytes=%u\r\n", res, bytes_read);
         lv_label_set_text(g_text_label, "Read failed");
         close_current_file();
     }

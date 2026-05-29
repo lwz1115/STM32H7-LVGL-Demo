@@ -12,23 +12,22 @@
 LTDC_HandleTypeDef  g_ltdc_handle;       /* LTDC��� */
 DMA2D_HandleTypeDef g_dma2d_handle;      /* DMA2D��� */
 
-#if !(__ARMCC_VERSION >= 6010050)                                                     /* ����AC6����������ʹ��AC5������ʱ */
+#if !(__ARMCC_VERSION >= 6010050)   /* AC5 编译器 */
 
-/* ���ݲ�ͬ����ɫ��ʽ,����֡�������� */
+/* 帧缓冲按最大可能屏幕 1280×800 分配，兼容所有面板
+ * RGB565: 1280×800×2 = 2,048,000 字节 = 2MB */
 #if LTDC_PIXFORMAT == LTDC_PIXFORMAT_ARGB8888 || LTDC_PIXFORMAT == LTDC_PIXFORMAT_RGB888
-    uint32_t ltdc_lcd_framebuf[1280][800] __attribute__((at(LTDC_FRAME_BUF_ADDR)));   /* ����������ֱ���ʱ,LTDC�����֡���������С */
+    uint32_t ltdc_lcd_framebuf[1280][800] __attribute__((at(LTDC_FRAME_BUF_ADDR)));  /* 1280×800×4 = 4MB */
 #else
-    uint16_t ltdc_lcd_framebuf[1280][800] __attribute__((at(LTDC_FRAME_BUF_ADDR)));   /* ����������ֱ���ʱ,LTDC�����֡���������С */
-//    uint16_t ltdc_lcd_framebuf[1280][800] __attribute__((at(LTDC_FRAME_BUF_ADDR + 1280 * 800 * 2)));/* ʹ��LTDC��2ʱʹ�ã�Ĭ��ʹ��LTDC��1�� */
+    uint16_t ltdc_lcd_framebuf[1280][800] __attribute__((at(LTDC_FRAME_BUF_ADDR)));  /* 1280×800×2 = 2MB */
 #endif
 
-#else      /* ʹ��AC6������ʱ */
+#else   /* AC6 编译器 */
 
-/* ���ݲ�ͬ����ɫ��ʽ,����֡�������� - �޸�Ϊʵ����Ļ�ߴ� 800×480 */
 #if LTDC_PIXFORMAT == LTDC_PIXFORMAT_ARGB8888 || LTDC_PIXFORMAT == LTDC_PIXFORMAT_RGB888
-    uint32_t ltdc_lcd_framebuf[800][480] __attribute__((section(".bss.ARM.__at_0XC0000000")));  /* 800×480��Ļ��֡����768KB */
+    uint32_t ltdc_lcd_framebuf[1280][800] __attribute__((section(".bss.ARM.__at_0XC0000000")));
 #else
-    uint16_t ltdc_lcd_framebuf[800][480] __attribute__((section(".bss.ARM.__at_0XC0000000")));  /* 800×480��Ļ��֡����768KB */
+    uint16_t ltdc_lcd_framebuf[1280][800] __attribute__((section(".bss.ARM.__at_0XC0000000")));
 #endif
 
 #endif

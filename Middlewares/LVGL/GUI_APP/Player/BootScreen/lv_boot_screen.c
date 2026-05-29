@@ -47,7 +47,7 @@ void lv_boot_screen_show(void)
 
     /* 副标题 */
     lv_obj_t *sub = lv_label_create(s_screen);
-    lv_label_set_text(sub, "STM32H743 + LVGL v8");
+    lv_label_set_text(sub, "STM32H743 + FreeRTOS + LVGL v8");
     lv_obj_set_style_text_font(sub, &lv_font_montserrat_16, 0);
     lv_obj_set_style_text_color(sub, lv_color_hex(0x7f8c8d), 0);
     lv_obj_align(sub, LV_ALIGN_CENTER, 0, 0);

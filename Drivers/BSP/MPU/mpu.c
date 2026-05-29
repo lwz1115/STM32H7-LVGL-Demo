@@ -11,70 +11,80 @@
  
  
  /**
- * @brief       ÉèÖÃÄ³¸öÇøÓòµÄMPU±£»¤
- * @param       baseaddr:MPU±£»¤ÇøÓòµÄ»ùÖ·(Ê×µØÖ·)
- *              size:MPU±£»¤ÇøÓòµÄ´óÐ¡(±ØÐëÊÇ32µÄ±¶Êý,µ¥Î»Îª×Ö½Ú),¿ÉÉèÖÃµÄÖµ²Î¿¼:CORTEX_MPU_Region_Size
- *              rnum:MPU±£»¤Çø±àºÅ,·¶Î§:0~7,×î´óÖ§³Ö8¸ö±£»¤ÇøÓò,¿ÉÉèÖÃµÄÖµ²Î¿¼£ºCORTEX_MPU_Region_Number
- *              ap:·ÃÎÊÈ¨ÏÞ,·ÃÎÊ¹ØÏµÈçÏÂ:¿ÉÉèÖÃµÄÖµ²Î¿¼£ºCORTEX_MPU_Region_Permission_Attributes
- *              MPU_REGION_NO_ACCESS,ÎÞ·ÃÎÊ£¨ÌØÈ¨&ÓÃ»§¶¼²»¿É·ÃÎÊ£©
- *              MPU_REGION_PRIV_RW,½öÖ§³ÖÌØÈ¨¶ÁÐ´·ÃÎÊ
- *              MPU_REGION_PRIV_RW_URO,½ûÖ¹ÓÃ»§Ð´·ÃÎÊ£¨ÌØÈ¨¿É¶ÁÐ´·ÃÎÊ£©
- *              MPU_REGION_FULL_ACCESS,È«·ÃÎÊ£¨ÌØÈ¨&ÓÃ»§¶¼¿É·ÃÎÊ£©
- *              MPU_REGION_PRIV_RO,½öÖ§³ÖÌØÈ¨¶Á·ÃÎÊ
- *              MPU_REGION_PRIV_RO_URO,Ö»¶Á£¨ÌØÈ¨&ÓÃ»§¶¼²»¿ÉÒÔÐ´£©
- *              Ïê¼û:STM32F7±à³ÌÊÖ²á.pdf,4.6½Ú,Table 89.
- *              sen:ÊÇ·ñÔÊÐí¹²ÓÃ;MPU_ACCESS_NOT_SHAREABLE,²»ÔÊÐí;MPU_ACCESS_SHAREABLE,ÔÊÐí
- *              cen:ÊÇ·ñÔÊÐícache;MPU_ACCESS_NOT_CACHEABLE,²»ÔÊÐí;MPU_ACCESS_CACHEABLE,ÔÊÐí
- *              ben:ÊÇ·ñÔÊÐí»º³å;MPU_ACCESS_NOT_BUFFERABLE,²»ÔÊÐí;MPU_ACCESS_BUFFERABLE,ÔÊÐí
- * @retval      0,³É¹¦.
- *              ÆäËû,´íÎó.
+ * @brief       ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½MPUï¿½ï¿½ï¿½ï¿½
+ * @param       baseaddr:MPUï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä»ï¿½Ö·(ï¿½×µï¿½Ö·)
+ *              size:MPUï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä´ï¿½Ð¡(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½32ï¿½Ä±ï¿½ï¿½ï¿½,ï¿½ï¿½Î»Îªï¿½Ö½ï¿½),ï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½Öµï¿½Î¿ï¿½:CORTEX_MPU_Region_Size
+ *              rnum:MPUï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½Î§:0~7,ï¿½ï¿½ï¿½Ö§ï¿½ï¿½8ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½Öµï¿½Î¿ï¿½ï¿½ï¿½CORTEX_MPU_Region_Number
+ *              ap:ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½,ï¿½ï¿½ï¿½Ê¹ï¿½Ïµï¿½ï¿½ï¿½ï¿½:ï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½Öµï¿½Î¿ï¿½ï¿½ï¿½CORTEX_MPU_Region_Permission_Attributes
+ *              MPU_REGION_NO_ACCESS,ï¿½Þ·ï¿½ï¿½Ê£ï¿½ï¿½ï¿½È¨&ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É·ï¿½ï¿½Ê£ï¿½
+ *              MPU_REGION_PRIV_RW,ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½
+ *              MPU_REGION_PRIV_RW_URO,ï¿½ï¿½Ö¹ï¿½Ã»ï¿½Ð´ï¿½ï¿½ï¿½Ê£ï¿½ï¿½ï¿½È¨ï¿½É¶ï¿½Ð´ï¿½ï¿½ï¿½Ê£ï¿½
+ *              MPU_REGION_FULL_ACCESS,È«ï¿½ï¿½ï¿½Ê£ï¿½ï¿½ï¿½È¨&ï¿½Ã»ï¿½ï¿½ï¿½ï¿½É·ï¿½ï¿½Ê£ï¿½
+ *              MPU_REGION_PRIV_RO,ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ *              MPU_REGION_PRIV_RO_URO,Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¨&ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½
+ *              ï¿½ï¿½ï¿½:STM32F7ï¿½ï¿½ï¿½ï¿½Ö²ï¿½.pdf,4.6ï¿½ï¿½,Table 89.
+ *              sen:ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½;MPU_ACCESS_NOT_SHAREABLE,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½;MPU_ACCESS_SHAREABLE,ï¿½ï¿½ï¿½ï¿½
+ *              cen:ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½cache;MPU_ACCESS_NOT_CACHEABLE,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½;MPU_ACCESS_CACHEABLE,ï¿½ï¿½ï¿½ï¿½
+ *              ben:ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½;MPU_ACCESS_NOT_BUFFERABLE,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½;MPU_ACCESS_BUFFERABLE,ï¿½ï¿½ï¿½ï¿½
+ * @retval      0,ï¿½É¹ï¿½.
+ *              ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½.
  */
 uint8_t mpu_set_protection(uint32_t baseaddr, uint32_t size, uint32_t rnum, uint8_t ap, uint8_t sen, uint8_t cen, uint8_t ben)
 {
     MPU_Region_InitTypeDef mpu_initure;
 
-    HAL_MPU_Disable();                                        /* ÅäÖÃMPUÖ®Ç°ÏÈ¹Ø±ÕMPU,ÅäÖÃÍê³ÉÒÔºóÔÚÊ¹ÄÜMPU */
+    HAL_MPU_Disable();                                        /* ï¿½ï¿½ï¿½ï¿½MPUÖ®Ç°ï¿½È¹Ø±ï¿½MPU,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôºï¿½ï¿½ï¿½Ê¹ï¿½ï¿½MPU */
 
-    mpu_initure.Enable = MPU_REGION_ENABLE;                   /* Ê¹ÄÜ¸Ã±£»¤ÇøÓò */
-    mpu_initure.Number = rnum;                                /* ÉèÖÃ±£»¤ÇøÓò */
-    mpu_initure.BaseAddress = baseaddr;                       /* ÉèÖÃ»ùÖ· */
-    mpu_initure.Size = size;                                  /* ÉèÖÃ±£»¤ÇøÓò´óÐ¡ */
-    mpu_initure.SubRegionDisable = 0X00;                      /* ½ûÖ¹×ÓÇøÓò */
-    mpu_initure.TypeExtField = MPU_TEX_LEVEL0;                /* ÉèÖÃÀàÐÍÀ©Õ¹ÓòÎªlevel0 */
-    mpu_initure.AccessPermission = (uint8_t)ap;               /* ÉèÖÃ·ÃÎÊÈ¨ÏÞ, */
-    mpu_initure.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;  /* ÔÊÐíÖ¸Áî·ÃÎÊ(ÔÊÐí¶ÁÈ¡Ö¸Áî) */
-    mpu_initure.IsShareable = sen;                            /* ÊÇ·ñ¹²ÓÃ? */
-    mpu_initure.IsCacheable = cen;                            /* ÊÇ·ñcache? */
-    mpu_initure.IsBufferable = ben;                           /* ÊÇ·ñ»º³å? */
-    HAL_MPU_ConfigRegion(&mpu_initure);                       /* ÅäÖÃMPU */
-    HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);                   /* ¿ªÆôMPU */
+    mpu_initure.Enable = MPU_REGION_ENABLE;                   /* Ê¹ï¿½Ü¸Ã±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+    mpu_initure.Number = rnum;                                /* ï¿½ï¿½ï¿½Ã±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+    mpu_initure.BaseAddress = baseaddr;                       /* ï¿½ï¿½ï¿½Ã»ï¿½Ö· */
+    mpu_initure.Size = size;                                  /* ï¿½ï¿½ï¿½Ã±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ */
+    mpu_initure.SubRegionDisable = 0X00;                      /* ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+    mpu_initure.TypeExtField = MPU_TEX_LEVEL0;                /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¹ï¿½ï¿½Îªlevel0 */
+    mpu_initure.AccessPermission = (uint8_t)ap;               /* ï¿½ï¿½ï¿½Ã·ï¿½ï¿½ï¿½È¨ï¿½ï¿½, */
+    mpu_initure.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;  /* ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡Ö¸ï¿½ï¿½) */
+    mpu_initure.IsShareable = sen;                            /* ï¿½Ç·ï¿½ï¿½ï¿½? */
+    mpu_initure.IsCacheable = cen;                            /* ï¿½Ç·ï¿½cache? */
+    mpu_initure.IsBufferable = ben;                           /* ï¿½Ç·ñ»º³ï¿½? */
+    HAL_MPU_ConfigRegion(&mpu_initure);                       /* ï¿½ï¿½ï¿½ï¿½MPU */
+    HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);                   /* ï¿½ï¿½ï¿½ï¿½MPU */
     return 0;
 }
 
 /**
- * @brief       ÉèÖÃÐèÒª±£»¤µÄ´æ´¢¿é
- * @param       ÎÞ
- * @note        ±ØÐë¶Ô²¿·Ö´æ´¢ÇøÓò½øÐÐMPU±£»¤,·ñÔò¿ÉÄÜµ¼ÖÂ³ÌÐòÔËÐÐÒì³£
- *              ±ÈÈçMCUÆÁ²»ÏÔÊ¾,ÉãÏñÍ·²É¼¯Êý¾Ý³ö´íµÈµÈÎÊÌâ...
+ * @brief       ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½Ä´æ´¢ï¿½ï¿½
+ * @param       ï¿½ï¿½
+ * @note        ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ï¿½Ö´æ´¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½MPUï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Üµï¿½ï¿½Â³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ì³£
+ *              ï¿½ï¿½ï¿½ï¿½MCUï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾,ï¿½ï¿½ï¿½ï¿½Í·ï¿½É¼ï¿½ï¿½ï¿½ï¿½Ý³ï¿½ï¿½ï¿½ï¿½Èµï¿½ï¿½ï¿½ï¿½ï¿½...
  */
 void mpu_memory_protection(void)
 {
-    /* ±£»¤Õû¸öD1 SRAM 512KB */
-    mpu_set_protection( 0x24000000,                 /* »ùµØÖ· */
-                        MPU_REGION_SIZE_512KB,      /* ³¤¶È */
-                        MPU_REGION_NUMBER1,         /* NUMER1 */
-                        MPU_REGION_FULL_ACCESS,     /* È«·ÃÎÊ */
-                        MPU_ACCESS_SHAREABLE,       /* ÔÊÐí¹²Ïí */
-                        MPU_ACCESS_CACHEABLE,       /* ÔÊÐícache */
-                        MPU_ACCESS_NOT_BUFFERABLE); /* ½ûÖ¹»º³å */
-    
-    /* ±£»¤SDRAMÇøÓò,¹²32M×Ö½Ú */
-    mpu_set_protection( 0XC0000000,                 /* »ùµØÖ· */
-                        MPU_REGION_SIZE_32MB,       /* ³¤¶È */
-                        MPU_REGION_NUMBER2,         /* NUMER2 */
-                        MPU_REGION_FULL_ACCESS,     /* È«·ÃÎÊ */
-                        MPU_ACCESS_NOT_SHAREABLE,   /* ½ûÖ¹¹²Ïí */
-                        MPU_ACCESS_CACHEABLE,       /* ÔÊÐícache */
-                        MPU_ACCESS_BUFFERABLE);     /* ÔÊÐí»º³å */
+    /* D1 SRAM 512KBï¼šå¯ç¼“å­˜ï¼Œç”¨äºŽä»£ç æ•°æ®å’Œ FreeRTOS å † */
+    mpu_set_protection(0x24000000,
+                       MPU_REGION_SIZE_512KB,
+                       MPU_REGION_NUMBER1,
+                       MPU_REGION_FULL_ACCESS,
+                       MPU_ACCESS_NOT_SHAREABLE,
+                       MPU_ACCESS_CACHEABLE,
+                       MPU_ACCESS_BUFFERABLE);
+
+    /* SDRAM 32MBï¼šå¯ç¼“å­˜+å¯ç¼“å†²ï¼Œç”¨äºŽ LTDC å¸§ç¼“å†²å’Œ LVGL å † */
+    mpu_set_protection(0xC0000000,
+                       MPU_REGION_SIZE_32MB,
+                       MPU_REGION_NUMBER2,
+                       MPU_REGION_FULL_ACCESS,
+                       MPU_ACCESS_NOT_SHAREABLE,
+                       MPU_ACCESS_CACHEABLE,
+                       MPU_ACCESS_BUFFERABLE);
+
+    /* D2 SRAM 256KBï¼šä¸å¯ç¼“å­˜ï¼Œç”¨äºŽ LVGL draw bufferï¼ˆDMA2D ç›´æŽ¥è®¿é—®ï¼‰
+     * å¿…é¡» non-cacheableï¼Œå¦åˆ™ DMA2D å†™å…¥åŽ CPU è¯»åˆ°çš„æ˜¯ Cache æ—§æ•°æ® */
+    mpu_set_protection(0x30000000,
+                       MPU_REGION_SIZE_256KB,
+                       MPU_REGION_NUMBER3,
+                       MPU_REGION_FULL_ACCESS,
+                       MPU_ACCESS_NOT_SHAREABLE,
+                       MPU_ACCESS_NOT_CACHEABLE,
+                       MPU_ACCESS_BUFFERABLE);
 }
 

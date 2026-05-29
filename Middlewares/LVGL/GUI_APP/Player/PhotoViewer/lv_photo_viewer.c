@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file lv_photo_viewer.c
  * @brief 相册浏览器实现
  *
@@ -28,8 +28,8 @@ static const char * const SCAN_DIRS[] = {
     "S:/PHOTO",     /* PHOTO子目录 */
     NULL
 };
-#define MAX_PHOTOS          256
-#define MAX_PATH_LEN        128
+#define MAX_PHOTOS          64      /* 减少：256→64，节省 24KB */
+#define MAX_PATH_LEN        96      /* 减少：128→96，节省 8KB */
 
 /* 箭头按钮尺寸 */
 #define ARROW_BTN_SIZE      56
@@ -101,10 +101,8 @@ static int scan_photos(void)
     for (int d = 0; SCAN_DIRS[d] != NULL && g_photo_count < MAX_PHOTOS; d++) {
         FRESULT fr = f_opendir(&dir, SCAN_DIRS[d]);
         if (fr != FR_OK) {
-            printf("[photo] 跳过目录: %s (err=%d)\r\n", SCAN_DIRS[d], fr);
             continue;
         }
-        printf("[photo] 扫描目录: %s\r\n", SCAN_DIRS[d]);
 
         while (g_photo_count < MAX_PHOTOS) {
             if (f_readdir(&dir, &fno) != FR_OK || fno.fname[0] == 0) break;
@@ -119,7 +117,6 @@ static int scan_photos(void)
                 snprintf(g_photo_paths[g_photo_count], MAX_PATH_LEN,
                          "%s/%s", dir_path, fno.fname);
             }
-            printf("[photo] 找到: %s\r\n", g_photo_paths[g_photo_count]);
             g_photo_count++;
         }
         f_closedir(&dir);
@@ -130,7 +127,6 @@ static int scan_photos(void)
         qsort(g_photo_paths, g_photo_count, MAX_PATH_LEN, path_compare);
     }
 
-    printf("[photo] 共找到 %d 张图片\r\n", g_photo_count);
     return g_photo_count;
 }
 
@@ -170,16 +166,37 @@ static void show_photo(int idx)
     fname = fname ? fname + 1 : g_current_path;
     lv_label_set_text(g_name_label, fname);
 
-    /* 重置偏移，不做任何缩放 */
+    /* 先读图片头，获取原始尺寸，用于计算缩放 */
+    lv_img_header_t header;
+
+    /* 诊断：直接用 FATFS 读文件前16字节，确认文件可读且是标准JPEG */
+    {
+        lv_fs_file_t f;
+        uint8_t magic[4] = {0};
+        uint32_t rn = 0;
+        lv_fs_res_t fres = lv_fs_open(&f, g_current_path, LV_FS_MODE_RD);
+        if (fres == LV_FS_RES_OK) {
+            lv_fs_read(&f, magic, 4, &rn);
+            lv_fs_close(&f);
+            printf("[PHOTO] file open OK, magic=%02X %02X %02X %02X rn=%d\r\n",
+                   magic[0], magic[1], magic[2], magic[3], (int)rn);
+        } else {
+            printf("[PHOTO] file open FAILED res=%d\r\n", (int)fres);
+        }
+    }
+
+    lv_res_t info_res = lv_img_decoder_get_info(g_current_path, &header);
+    printf("[PHOTO] %s  info=%d  %dx%d\r\n",
+           g_current_path, (int)info_res, (int)header.w, (int)header.h);
+
+    /* 加载新图，不缩放，先确认能显示 */
     lv_img_set_zoom(g_img_obj, 256);
     lv_img_set_offset_x(g_img_obj, 0);
     lv_img_set_offset_y(g_img_obj, 0);
-
-    /* 设置图片源 */
+    lv_img_set_angle(g_img_obj, 0);
     lv_img_set_src(g_img_obj, g_current_path);
-    lv_obj_align(g_img_obj, LV_ALIGN_CENTER, 0, 0);
 
-    printf("[photo] 显示: %s\r\n", g_current_path);
+    lv_obj_align(g_img_obj, LV_ALIGN_CENTER, 0, 0);
     update_arrow_visibility();
 }
 
@@ -270,6 +287,9 @@ static lv_obj_t *create_arrow_btn(lv_obj_t *parent, bool is_left,
 lv_obj_t *lv_photo_viewer_create(void)
 {
     if (g_screen != NULL) lv_photo_viewer_destroy();
+
+    /* 进入前清理内存 */
+    lv_img_cache_invalidate_src(NULL);
 
     lv_coord_t sw = lv_disp_get_hor_res(NULL);
     lv_coord_t sh = lv_disp_get_ver_res(NULL);

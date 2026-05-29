@@ -13,9 +13,13 @@
 
 
 /**
- * SYS_SUPPORT_OSÓÃÓÚ¶¨ÒåÏµÍ³ÎÄ¼þ¼ÐÊÇ·ñÖ§³ÖOS
- * 0,²»Ö§³ÖOS
- * 1,Ö§³ÖOS
+ * SYS_SUPPORT_OSï¿½ï¿½ï¿½Ú¶ï¿½ï¿½ï¿½ÏµÍ³ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Ö§ï¿½ï¿½OS
+ * 0,ï¿½ï¿½Ö§ï¿½ï¿½OS
+ * 1,Ö§ï¿½ï¿½OS (uC/OS)
+ * 
+ * ×¢ï¿½â£ºï¿½ï¿½ï¿½ï¿½Ä¿Ê¹ï¿½ï¿½ FreeRTOSï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ uC/OS
+ * FreeRTOS ï¿½ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½Ó³Ùºï¿½ï¿½ï¿½ vTaskDelay()
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª 0ï¿½ï¿½Ê¹ï¿½Ã¼òµ¥µï¿½ï¿½Ó³Ùºï¿½ï¿½ï¿½
  */
 #define SYS_SUPPORT_OS         0
 
@@ -24,16 +28,16 @@
 #define      OFF     0
 #define      Write_Through()    do{ *(__IO uint32_t*)0XE000EF9C = 1UL << 2; }while(0)     /* CacheÍ¸Ð´Ä£Ê½ */
 
-void sys_nvic_set_vector_table(uint32_t baseaddr, uint32_t offset);                       /* ÉèÖÃÖÐ¶ÏÆ«ÒÆÁ¿ */
-void sys_cache_enable(void);                                                              /* Ê¹ÄÜSTM32H7µÄL1-Cahce */
-uint8_t sys_stm32_clock_init(uint32_t plln, uint32_t pllm, uint32_t pllp, uint32_t pllq); /* ÅäÖÃÏµÍ³Ê±ÖÓ */
+void sys_nvic_set_vector_table(uint32_t baseaddr, uint32_t offset);                       /* ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½Æ«ï¿½ï¿½ï¿½ï¿½ */
+void sys_cache_enable(void);                                                              /* Ê¹ï¿½ï¿½STM32H7ï¿½ï¿½L1-Cahce */
+uint8_t sys_stm32_clock_init(uint32_t plln, uint32_t pllm, uint32_t pllp, uint32_t pllq); /* ï¿½ï¿½ï¿½ï¿½ÏµÍ³Ê±ï¿½ï¿½ */
 
 
-/* ÒÔÏÂÎª»ã±àº¯Êý */
-void sys_wfi_set(void);             /* Ö´ÐÐWFIÖ¸Áî */
-void sys_intx_disable(void);        /* ¹Ø±ÕËùÓÐÖÐ¶Ï */
-void sys_intx_enable(void);         /* ¿ªÆôËùÓÐÖÐ¶Ï */
-void sys_msr_msp(uint32_t addr);    /* ÉèÖÃÕ»¶¥µØÖ· */
+/* ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½àº¯ï¿½ï¿½ */
+void sys_wfi_set(void);             /* Ö´ï¿½ï¿½WFIÖ¸ï¿½ï¿½ */
+void sys_intx_disable(void);        /* ï¿½Ø±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ */
+void sys_intx_enable(void);         /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ */
+void sys_msr_msp(uint32_t addr);    /* ï¿½ï¿½ï¿½ï¿½Õ»ï¿½ï¿½ï¿½ï¿½Ö· */
 
 #endif
 

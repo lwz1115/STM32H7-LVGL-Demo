@@ -29,7 +29,7 @@
 ;   <o> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>
 ; </h>
 
-Stack_Size      EQU     0x00000800
+Stack_Size      EQU     0x00004000  ; 16KB - 增加栈空间用于FreeRTOS+LVGL初始化
 
                 AREA    STACK, NOINIT, READWRITE, ALIGN=3
 Stack_Mem       SPACE   Stack_Size
@@ -40,7 +40,7 @@ __initial_sp
 ;   <o>  Heap Size (in Bytes) <0x0-0xFFFFFFFF:8>
 ; </h>
 
-Heap_Size       EQU     0x00000200
+Heap_Size       EQU     0x00001000  ; 4KB - 增加堆空间用于HAL库和malloc
 
                 AREA    HEAP, NOINIT, READWRITE, ALIGN=3
 __heap_base

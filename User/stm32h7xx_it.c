@@ -22,6 +22,8 @@
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_it.h"
 #include "./SYSTEM/sys/sys.h"
+#include "FreeRTOS.h"
+#include "task.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "./BSP/NTP/ntp_sync.h"     /* NTP时间同步（接收ESP32-S3串口数据） */
@@ -143,18 +145,9 @@ void UsageFault_Handler(void)
 
 /**
   * @brief This function handles System service call via SWI instruction.
+  * @note  FreeRTOS port.c provides the real handler via vPortSVCHandler macro
   */
-#if (!SYS_SUPPORT_OS)
-void SVC_Handler(void)
-{
-  /* USER CODE BEGIN SVCall_IRQn 0 */
-
-  /* USER CODE END SVCall_IRQn 0 */
-  /* USER CODE BEGIN SVCall_IRQn 1 */
-
-  /* USER CODE END SVCall_IRQn 1 */
-}
-#endif
+/* SVC_Handler is defined by FreeRTOS via vPortSVCHandler macro in FreeRTOSConfig.h */
 
 /**
   * @brief This function handles Debug monitor.
@@ -171,34 +164,24 @@ void DebugMon_Handler(void)
 
 /**
   * @brief This function handles Pendable request for system service.
+  * @note  FreeRTOS port.c provides the real handler via xPortPendSVHandler macro
   */
-#if (!SYS_SUPPORT_OS)
-void PendSV_Handler(void)
-{
-  /* USER CODE BEGIN PendSV_IRQn 0 */
-
-  /* USER CODE END PendSV_IRQn 0 */
-  /* USER CODE BEGIN PendSV_IRQn 1 */
-
-  /* USER CODE END PendSV_IRQn 1 */
-}
-#endif
+/* PendSV_Handler is defined by FreeRTOS via xPortPendSVHandler macro in FreeRTOSConfig.h */
 
 /**
   * @brief This function handles System tick timer.
+  * @note  HAL tick + FreeRTOS tick
   */
-#if (!SYS_SUPPORT_OS)
 void SysTick_Handler(void)
 {
-  /* USER CODE BEGIN SysTick_IRQn 0 */
-
-  /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
-  /* USER CODE BEGIN SysTick_IRQn 1 */
-
-  /* USER CODE END SysTick_IRQn 1 */
+    HAL_IncTick();
+    /* 调度器启动后才调用 FreeRTOS tick 处理 */
+    extern void xPortSysTickHandler(void);
+    if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
+    {
+        xPortSysTickHandler();
+    }
 }
-#endif
 
 /******************************************************************************/
 /* STM32H7xx Peripheral Interrupt Handlers                                    */

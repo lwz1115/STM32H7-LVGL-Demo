@@ -56,16 +56,17 @@
 #define LV_MEM_CUSTOM                       0
 #if LV_MEM_CUSTOM == 0
     /* `lv_mem_alloc()`可用的总堆大小(单位:字节)(最少 >= 2kB)
-     * 字体bin加载需要约3MB，必须放在SDRAM里
-     * SDRAM布局:
-     *   0xC0000000 ~ 0xC017FFFF  LVGL显示双缓冲 (800*480*2*2 = 1.5MB)
-     *   0xC0200000 ~ 0xC05FFFFF  字体bin原始数据 (4MB，font_sdram.c使用)
-     *   0xC0600000 ~ 0xC1FFFFFF  LVGL堆 (26MB，lv_mem_alloc使用)
+     *
+     * ============================================================
+     * SDRAM 32MB 布局（0xC0000000 ~ 0xC1FFFFFF）
+     * ============================================================
+     * 0xC0000000 ~ 0xC01FFFFF  LTDC 帧缓冲 1280×800×2 = 2MB (RGB565)
+     *                           兼容所有面板尺寸
+     * 0xC0200000 ~ 0xCFFFFFF  LVGL 堆 (14MB) - 足够显示图片和UI
+     * ============================================================
      */
-    #define LV_MEM_SIZE                     (26U * 1024U * 1024U)  /*[字节] 26MB SDRAM堆*/
-
-    /* 把LVGL堆放到SDRAM，避免占用内部SRAM */
-    #define LV_MEM_ADR                      0xC0600000UL           /* SDRAM 6MB偏移处 */
+    #define LV_MEM_SIZE     (14U * 1024U * 1024U)   /* 14MB SDRAM堆 */
+    #define LV_MEM_ADR      0xC0200000UL             /* LTDC帧缓冲(2MB)后，2MB对齐 */
     /* 替换内存分配函数，当LV_MEM_ADR为0时有效 */
     #if LV_MEM_ADR == 0
         //#define LV_MEM_POOL_INCLUDE your_alloc_library  /* 可选: 包含自动分配内存函数的文件 */
@@ -97,10 +98,10 @@
  ***********************************************************************************/
  
 /* 默认显示刷新周期，单位为毫秒 */
-#define LV_DISP_DEF_REFR_PERIOD             8      /*[ms]*/  /* 优化：从4ms改为8ms，降低CPU负载 */
+#define LV_DISP_DEF_REFR_PERIOD             10      /*[ms]*/  /* 优化：降低刷新率，节省CPU */
 
 /* 默认输入设备读取周期(单位为毫秒) */
-#define LV_INDEV_DEF_READ_PERIOD            4     /*[ms]*/
+#define LV_INDEV_DEF_READ_PERIOD            10     /*[ms]*/   /* 优化：降低触摸扫描率 */
 
 /* 使用自动的tick来源
  * 如果启用，则需要通过 `lv_tick_inc()` 定期提供tick值 */
@@ -142,15 +143,19 @@
     /* 用于圆角绘制的缓存大小
      * 每个四分之一圆使用约1/4个圆的内存进行缓存。
      * 注意: 该值*4等于圆的内存(如果缓存启用，也会缓存阴影)
-     * 0: 禁用缓存 */
-    #define LV_CIRCLE_CACHE_SIZE            4
+     * 最小值必须为 1（LVGL 不支持 0） */
+    #define LV_CIRCLE_CACHE_SIZE            1
     
 #endif /*LV_DRAW_COMPLEX*/
 
 /* 图像缓存大小。
- * 在图像渲染时，LVGL将其保存在RAM中，以便下次使用时不需再次解码。
- * 0: 禁用图像缓存 */
-#define LV_IMG_CACHE_DEF_SIZE               0  /* 优化：无背景图片，禁用缓存节省内存 */
+ * 缓存已解码的图片，切换图片时无需重新解码，减少内存碎片。
+ * 每个缓存槽保存一张解码后的图片指针，不额外占用像素内存。
+ * 
+ * !!!重要：相册应用中，每张图片解码后占用大量内存（800×480×2=768KB）
+ * 如果缓存多张，会导致内存不足。设为 1 只缓存当前图片。
+ */
+#define LV_IMG_CACHE_DEF_SIZE               1
 
 /* 渐变停止点的最大数量
  * 如果使用更多，则成本较高，该值较小可以减少内存消耗
@@ -221,21 +226,12 @@
  *-----------*/
 
 /* 启用日志记录 */
-#define LV_USE_LOG                          1
+#define LV_USE_LOG                          0
 #if LV_USE_LOG
 
-    /*日志记录详细程度:
-    *LV_LOG_LEVEL_TRACE       记录所有信息(最详细)
-    *LV_LOG_LEVEL_INFO        记录重要信息
-    *LV_LOG_LEVEL_WARN        记录可能恢复的错误
-    *LV_LOG_LEVEL_ERROR       记录致命错误
-    *LV_LOG_LEVEL_USER        记录用户自定义消息
-    *LV_LOG_LEVEL_NONE        不记录任何信息*/
-    #define LV_LOG_LEVEL LV_LOG_LEVEL_USER
+    #define LV_LOG_LEVEL LV_LOG_LEVEL_WARN
 
-    /*1: 使用'printf'打印日志;
-     *0: 需要使用 'lv_log_register_print_cb()' 注册自定义打印回调 */
-    #define LV_LOG_PRINTF                   1
+    #define LV_LOG_PRINTF                   0
 
     /* 启用/禁用LV_LOG_TRACE日志的详细信息 */
     #define LV_LOG_TRACE_MEM                1
@@ -521,9 +517,9 @@
                                         
  ***********************************************************************************/
 /*-----------
- * 1. 扩展部件
+ * 1. 扩展部件（禁用未使用的部件以节省内存）
  *----------*/
-#define LV_USE_CALENDAR                     1
+#define LV_USE_CALENDAR                     0   /* 未使用 */
 #if LV_USE_CALENDAR
     #define LV_CALENDAR_WEEK_STARTS_MONDAY  0
     #if LV_CALENDAR_WEEK_STARTS_MONDAY
@@ -537,33 +533,33 @@
     #define LV_USE_CALENDAR_HEADER_DROPDOWN 1
 #endif  /*LV_USE_CALENDAR*/
 
-#define LV_USE_CHART                        1
+#define LV_USE_CHART                        0   /* 未使用 */
 
-#define LV_USE_COLORWHEEL                   1
+#define LV_USE_COLORWHEEL                   0   /* 未使用 */
 
 #define LV_USE_IMGBTN                       1
 
-#define LV_USE_KEYBOARD                     1
+#define LV_USE_KEYBOARD                     0   /* 未使用 */
 
-#define LV_USE_LED                          1
+#define LV_USE_LED                          0   /* 未使用 */
 
 #define LV_USE_LIST                         1
 
-#define LV_USE_MENU                         1
+#define LV_USE_MENU                         0   /* 未使用 */
 
-#define LV_USE_METER                        1
+#define LV_USE_METER                        0   /* 未使用 */
 
-#define LV_USE_MSGBOX                       1
+#define LV_USE_MSGBOX                       0   /* 未使用 */
 
-#define LV_USE_SPINBOX                      1
+#define LV_USE_SPINBOX                      0   /* 未使用 */
 
-#define LV_USE_SPINNER                      1
+#define LV_USE_SPINNER                      0   /* 未使用 */
 
-#define LV_USE_TABVIEW                      1
+#define LV_USE_TABVIEW                      0   /* 未使用 */
 
-#define LV_USE_TILEVIEW                     1
+#define LV_USE_TILEVIEW                     0   /* 未使用 */
 
-#define LV_USE_WIN                          1
+#define LV_USE_WIN                          0   /* 未使用 */
 
 #define LV_USE_SPAN                         1
 #if LV_USE_SPAN

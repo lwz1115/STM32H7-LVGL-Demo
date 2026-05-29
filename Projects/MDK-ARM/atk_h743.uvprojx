@@ -339,7 +339,7 @@
               <MiscControls>--diag_suppress=68 --diag_suppress=111 --diag_suppress=188 --diag_suppress=223 --diag_suppress=546  --diag_suppress=1295 --locale=english --diag_suppress=550</MiscControls>
               <Define>USE_HAL_DRIVER,STM32H743xx</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\Drivers\CMSIS\Device\ST\STM32H7xx\Include;..\..\Drivers\STM32H7xx_HAL_Driver\Inc;..\..\Drivers\CMSIS\Include;..\..\Middlewares;..\..\Drivers;..\..\User;..\..\Middlewares\LVGL\GUI;..\..\Middlewares\LVGL\GUI\lvgl;..\..\Middlewares\LVGL\GUI\lvgl\src;..\..\Middlewares\LVGL\GUI\lvgl\examples\porting;..\..\Middlewares\LVGL\GUI_APP\demos\music;..\..\Middlewares\LVGL\GUI_APP;..\..\Middlewares\LVGL\GUI_APP\Player;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage\assets;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader\assets;..\..\Middlewares\FatFS;..\..\Drivers\BSP\SDCARD;..\..\Drivers\BSP\NTP;..\..\Middlewares\LVGL\GUI\font_sdram;..\..\Middlewares\LVGL\GUI_APP\Player\BootScreen;..\..\Middlewares\LVGL\GUI_APP\Player\PhotoViewer</IncludePath>
+              <IncludePath>..\..\Drivers\CMSIS\Device\ST\STM32H7xx\Include;..\..\Drivers\STM32H7xx_HAL_Driver\Inc;..\..\Drivers\CMSIS\Include;..\..\Middlewares;..\..\Drivers;..\..\User;..\..\Middlewares\LVGL\GUI;..\..\Middlewares\LVGL\GUI\lvgl;..\..\Middlewares\LVGL\GUI\lvgl\src;..\..\Middlewares\LVGL\GUI\lvgl\examples\porting;..\..\Middlewares\LVGL\GUI_APP\demos\music;..\..\Middlewares\LVGL\GUI_APP;..\..\Middlewares\LVGL\GUI_APP\Player;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage;..\..\Middlewares\LVGL\GUI_APP\Player\MainPage\assets;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader;..\..\Middlewares\LVGL\GUI_APP\Player\TextReader\assets;..\..\Middlewares\FatFS;..\..\Drivers\BSP\SDCARD;..\..\Drivers\BSP\NTP;..\..\Middlewares\LVGL\GUI\font_sdram;..\..\Middlewares\LVGL\GUI_APP\Player\BootScreen;..\..\Middlewares\LVGL\GUI_APP\Player\PhotoViewer;..\..\Middlewares\FreeRTOS\include;..\..\Middlewares\FreeRTOS\portable;..\..\Middlewares\FreeRTOS\portable\ARM_CM7;..\..\Middlewares\FreeRTOS\source</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -370,7 +370,7 @@
             <TextAddressRange>0x08000000</TextAddressRange>
             <DataAddressRange>0x20000000</DataAddressRange>
             <pXoBase></pXoBase>
-            <ScatterFile></ScatterFile>
+            <ScatterFile>..\..\Output\atk_h743.sct</ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
             <Misc></Misc>
@@ -641,7 +641,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Middlewares/lvgl/fatfs</GroupName>
+          <GroupName>Middlewares/fatfs</GroupName>
           <Files>
             <File>
               <FileName>diskio.c</FileName>
@@ -667,6 +667,61 @@
               <FileName>font_sdram.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Middlewares\LVGL\GUI\font_sdram\font_sdram.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Middlewares/freertos/core</GroupName>
+          <Files>
+            <File>
+              <FileName>croutine.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\FreeRTOS\source\croutine.c</FilePath>
+            </File>
+            <File>
+              <FileName>event_groups.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\FreeRTOS\source\event_groups.c</FilePath>
+            </File>
+            <File>
+              <FileName>list.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\FreeRTOS\source\list.c</FilePath>
+            </File>
+            <File>
+              <FileName>queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\FreeRTOS\source\queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>stream_buffer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\FreeRTOS\source\stream_buffer.c</FilePath>
+            </File>
+            <File>
+              <FileName>tasks.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\FreeRTOS\source\tasks.c</FilePath>
+            </File>
+            <File>
+              <FileName>timers.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\FreeRTOS\source\timers.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Middlewares/freertos/port</GroupName>
+          <Files>
+            <File>
+              <FileName>heap_4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\FreeRTOS\portable\heap_4.c</FilePath>
+            </File>
+            <File>
+              <FileName>port.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Middlewares\FreeRTOS\portable\ARM_CM7\port.c</FilePath>
             </File>
           </Files>
         </Group>

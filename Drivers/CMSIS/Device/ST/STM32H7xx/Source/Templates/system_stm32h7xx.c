@@ -181,6 +181,16 @@ void SystemInit (void)
   #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
     SCB->CPACR |= ((3UL << (10*2))|(3UL << (11*2)));  /* set CP10 and CP11 Full Access */
   #endif
+  
+  /* Enable D2 SRAM clock for large data storage */
+#if defined(RCC_AHB2ENR_D2SRAM3EN)
+  RCC->AHB2ENR |= (RCC_AHB2ENR_D2SRAM1EN | RCC_AHB2ENR_D2SRAM2EN | RCC_AHB2ENR_D2SRAM3EN);
+#elif defined(RCC_AHB2ENR_D2SRAM2EN)
+  RCC->AHB2ENR |= (RCC_AHB2ENR_D2SRAM1EN | RCC_AHB2ENR_D2SRAM2EN);
+#else
+  RCC->AHB2ENR |= (RCC_AHB2ENR_AHBSRAM1EN | RCC_AHB2ENR_AHBSRAM2EN);
+#endif
+  
   /* Reset the RCC clock configuration to the default reset state ------------*/
 
    /* Increasing the CPU frequency */

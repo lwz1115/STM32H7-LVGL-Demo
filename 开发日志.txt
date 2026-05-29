@@ -14,3 +14,12 @@
 1.SD卡挂载成功，实现GBK字码转换UTF8并读取中文字符
 5/28：
 1.实现相册读取SD卡显示图片
+5/29:
+1.解决链接器内存不足问题（L6406E错误）
+2.优化内存布局，使用STM32H743所有SRAM区域：
+  - DTCM RAM (128KB): 栈
+  - D1 AXI SRAM (512KB): 主数据和堆
+  - D2 SRAM (288KB): LVGL显示缓冲区和大对象
+  - SDRAM (32MB): LVGL动态堆
+3.成功实现FreeRTOS和LVGL联合运行
+

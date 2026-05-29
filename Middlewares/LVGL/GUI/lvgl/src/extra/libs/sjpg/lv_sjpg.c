@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file lv_sjpg.c
  *
  */
@@ -269,18 +269,20 @@ end:
             lv_mem_free(workb_temp);
             lv_fs_close(&file);
 
+            printf("[SJPG] decoder_info .jpg rc=%d w=%d h=%d\r\n",
+                   (int)rc, (int)jd_tmp.width, (int)jd_tmp.height);
+
             if(rc == JDR_OK) {
                 header->always_zero = 0;
                 header->cf = LV_IMG_CF_RAW;
                 header->w = jd_tmp.width;
                 header->h = jd_tmp.height;
+                printf("[SJPG] returning LV_RES_OK\r\n");
                 return LV_RES_OK;
             } else {
-                if(rc == 8) {
-                    printf("[sjpg] Progressive JPEG not supported, convert to Baseline\r\n");
-                } else {
-                    printf("[sjpg] jd_prepare failed rc=%d\r\n", rc);
-                }
+                LV_LOG_WARN("jd_prepare rc=%d", (int)rc);
+                /* rc含义: 3=MEM1内存不足, 6=FMT1数据错误, 7=FMT2不支持格式, 8=FMT3不支持标准 */
+                printf("[SJPG] jd_prepare failed rc=%d\r\n", (int)rc);
             }
         }
     }
@@ -647,6 +649,8 @@ end:
             JRESULT rc = jd_prepare(&jd_tmp, input_func, workb_temp, (size_t)TJPGD_WORKBUFF_SIZE, &io_source_temp);
             lv_mem_free(workb_temp);
 
+            printf("[SJPG] open .jpg rc=%d\r\n", (int)rc);
+
             if(rc == JDR_OK) {
                 sjpeg->sjpeg_x_res               = jd_tmp.width;
                 sjpeg->sjpeg_y_res               = jd_tmp.height;
@@ -656,30 +660,32 @@ end:
 
                 sjpeg->frame_base_array  = NULL;
                 sjpeg->frame_base_offset = lv_mem_alloc(sizeof(int) * 1);
-                if(! sjpeg->frame_base_offset) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; return LV_RES_INV; }
+                if(! sjpeg->frame_base_offset) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; printf("[SJPG] open fail: frame_base_offset\r\n"); return LV_RES_INV; }
                 sjpeg->frame_base_offset[0] = 0;
 
                 sjpeg->frame_cache = lv_mem_alloc((size_t)sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 3);
-                if(! sjpeg->frame_cache) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; return LV_RES_INV; }
+                if(! sjpeg->frame_cache) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; printf("[SJPG] open fail: frame_cache alloc %d bytes\r\n", (int)(sjpeg->sjpeg_x_res * sjpeg->sjpeg_single_frame_height * 3)); return LV_RES_INV; }
 
                 sjpeg->io.img_cache_buff  = sjpeg->frame_cache;
                 sjpeg->io.img_cache_x_res = sjpeg->sjpeg_x_res;
 
                 sjpeg->workb = lv_mem_alloc(TJPGD_WORKBUFF_SIZE);
-                if(! sjpeg->workb) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; return LV_RES_INV; }
+                if(! sjpeg->workb) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; printf("[SJPG] open fail: workb\r\n"); return LV_RES_INV; }
 
                 sjpeg->tjpeg_jd = lv_mem_alloc(sizeof(JDEC));
-                if(! sjpeg->tjpeg_jd) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; return LV_RES_INV; }
+                if(! sjpeg->tjpeg_jd) { lv_fs_close(&lv_file); lv_sjpg_cleanup(sjpeg); dsc->user_data = NULL; printf("[SJPG] open fail: tjpeg_jd\r\n"); return LV_RES_INV; }
 
                 sjpeg->io.type    = SJPEG_IO_SOURCE_DISK;
                 sjpeg->io.lv_file = lv_file;
                 dsc->img_data     = NULL;
+                printf("[SJPG] open OK x=%d y=%d\r\n", sjpeg->sjpeg_x_res, sjpeg->sjpeg_y_res);
                 return LV_RES_OK;
             }
             else {
                 lv_fs_close(&lv_file);
                 lv_sjpg_cleanup(sjpeg);
                 dsc->user_data = NULL;
+                printf("[SJPG] open jd_prepare failed rc=%d\r\n", (int)rc);
                 return LV_RES_INV;
             }
         }
@@ -787,10 +793,16 @@ static lv_res_t decoder_read_line(lv_img_decoder_t * decoder, lv_img_decoder_dsc
             lv_fs_seek(&(sjpeg->io.lv_file), sjpeg->io.raw_sjpg_data_next_read_pos, LV_FS_SEEK_SET);
 
             rc = jd_prepare(sjpeg->tjpeg_jd, input_func, sjpeg->workb, (size_t)TJPGD_WORKBUFF_SIZE, &(sjpeg->io));
-            if(rc != JDR_OK) return LV_RES_INV;
+            if(rc != JDR_OK) {
+                printf("[SJPG] read_line jd_prepare rc=%d y=%d\r\n", (int)rc, (int)y);
+                return LV_RES_INV;
+            }
 
             rc = jd_decomp(sjpeg->tjpeg_jd, img_data_cb, 0);
-            if(rc != JDR_OK) return LV_RES_INV;
+            if(rc != JDR_OK) {
+                printf("[SJPG] read_line jd_decomp rc=%d y=%d\r\n", (int)rc, (int)y);
+                return LV_RES_INV;
+            }
 
             sjpeg->sjpeg_cache_frame_index = sjpeg_req_frame_index;
         }
