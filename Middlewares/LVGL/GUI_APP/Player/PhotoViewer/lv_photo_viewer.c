@@ -28,12 +28,23 @@ static const char * const SCAN_DIRS[] = {
     "S:/PHOTO",     /* PHOTO子目录 */
     NULL
 };
-#define MAX_PHOTOS          64      /* 减少：256→64，节省 24KB */
-#define MAX_PATH_LEN        96      /* 减少：128→96，节省 8KB */
+#define MAX_PHOTOS          64
+#define MAX_PATH_LEN        96
 
 /* 箭头按钮尺寸 */
 #define ARROW_BTN_SIZE      56
 #define ARROW_BTN_MARGIN    16
+
+/*
+ * 解码缓冲区放在 SDRAM（0xC0F00000），RGB565，最大支持 1024×600
+ * 1024 × 600 × 2 = 1,228,800 字节 ≈ 1.2MB
+ * SDRAM 布局：
+ *   0xC0000000 ~ 0xC01FFFFF  LTDC 帧缓冲 2MB
+ *   0xC0200000 ~ 0xC0EFFFFF  LVGL 堆 13MB
+ *   0xC0F00000 ~ 0xC0FFFFFF  图片解码缓冲 1MB（本区域）
+ */
+#define PHOTO_DECODE_BUF_ADDR   0xC0F00000UL
+#define PHOTO_DECODE_BUF_SIZE   (1024 * 600 * 2)   /* 最大 1024×600 RGB565 */
 
 /* ============================================================
  * 内部状态
@@ -54,6 +65,18 @@ static int  g_current_idx = 0;
 
 /* 当前图片路径（lv_img_set_src 需要持久有效的字符串） */
 static char g_current_path[MAX_PATH_LEN];
+
+/* 解码后的图片描述符（img_data 指向 SDRAM 缓冲区，zoom 可正常工作） */
+static lv_img_dsc_t g_img_dsc = {
+    .header = {
+        .always_zero = 0,
+        .cf          = LV_IMG_CF_TRUE_COLOR,
+        .w           = 0,
+        .h           = 0,
+    },
+    .data_size = 0,
+    .data      = (const uint8_t *)PHOTO_DECODE_BUF_ADDR,
+};
 
 /* ============================================================
  * 前向声明
@@ -141,7 +164,6 @@ static void show_photo(int idx)
     if (idx < 0 || idx >= g_photo_count) return;
     g_current_idx = idx;
 
-    /* 清除上次的错误提示 */
     if (g_err_label != NULL) {
         lv_obj_del(g_err_label);
         g_err_label = NULL;
@@ -161,40 +183,76 @@ static void show_photo(int idx)
     char buf[32];
     snprintf(buf, sizeof(buf), "%d / %d", idx + 1, g_photo_count);
     lv_label_set_text(g_count_label, buf);
-
     const char *fname = strrchr(g_current_path, '/');
     fname = fname ? fname + 1 : g_current_path;
     lv_label_set_text(g_name_label, fname);
 
-    /* 先读图片头，获取原始尺寸，用于计算缩放 */
-    lv_img_header_t header;
+    /* 先清空图片控件，释放旧解码资源 */
+    lv_img_cache_invalidate_src(NULL);
+    lv_img_set_src(g_img_obj, NULL);
 
-    /* 诊断：直接用 FATFS 读文件前16字节，确认文件可读且是标准JPEG */
-    {
-        lv_fs_file_t f;
-        uint8_t magic[4] = {0};
-        uint32_t rn = 0;
-        lv_fs_res_t fres = lv_fs_open(&f, g_current_path, LV_FS_MODE_RD);
-        if (fres == LV_FS_RES_OK) {
-            lv_fs_read(&f, magic, 4, &rn);
-            lv_fs_close(&f);
-            printf("[PHOTO] file open OK, magic=%02X %02X %02X %02X rn=%d\r\n",
-                   magic[0], magic[1], magic[2], magic[3], (int)rn);
-        } else {
-            printf("[PHOTO] file open FAILED res=%d\r\n", (int)fres);
+    /* -------------------------------------------------------
+     * 把图片解码到 SDRAM 缓冲区，然后用 lv_img_dsc_t 显示
+     * img_data != NULL 时 lv_img_set_zoom 才能正常工作
+     * ------------------------------------------------------- */
+    lv_img_decoder_dsc_t dsc;
+    lv_memset_00(&dsc, sizeof(dsc));
+    lv_img_decoder_open(&dsc, g_current_path, lv_color_black(), 0);
+
+    /* 注意：SJPG decoder_open 可能返回 INV 但 header 已填好，以 header.w 为准 */
+    if (dsc.header.w > 0 && dsc.header.h > 0) {
+        uint32_t w      = dsc.header.w;
+        uint32_t h      = dsc.header.h;
+        uint32_t needed = w * h * sizeof(lv_color_t);
+        lv_color_t *out = (lv_color_t *)PHOTO_DECODE_BUF_ADDR;
+
+        if (needed <= PHOTO_DECODE_BUF_SIZE) {
+            if (dsc.img_data != NULL) {
+                /* 解码器已提供完整像素数据，直接复制 */
+                memcpy(out, dsc.img_data, needed);
+            } else {
+                /* 逐行读取：分配一行缓冲，循环写入 SDRAM */
+                uint8_t *row_buf = (uint8_t *)lv_mem_alloc(
+                                       w * LV_IMG_PX_SIZE_ALPHA_BYTE);
+                if (row_buf) {
+                    for (uint32_t y = 0; y < h; y++) {
+                        if (lv_img_decoder_read_line(&dsc, 0, (lv_coord_t)y,
+                                                     (lv_coord_t)w, row_buf)
+                            == LV_RES_OK) {
+                            memcpy(out + y * w, row_buf,
+                                   w * sizeof(lv_color_t));
+                        }
+                    }
+                    lv_mem_free(row_buf);
+                }
+            }
+
+            /* 更新图片描述符，指向 SDRAM 缓冲 */
+            g_img_dsc.header.w  = (lv_coord_t)w;
+            g_img_dsc.header.h  = (lv_coord_t)h;
+            g_img_dsc.header.cf = LV_IMG_CF_TRUE_COLOR;
+            g_img_dsc.data_size = needed;
+            g_img_dsc.data      = (const uint8_t *)PHOTO_DECODE_BUF_ADDR;
+
+            /* 自适应缩放：用屏幕分辨率，不依赖布局时序 */
+            lv_coord_t area_w = lv_disp_get_hor_res(NULL);
+            lv_coord_t area_h = lv_disp_get_ver_res(NULL) - 50 - 30;
+            uint32_t zoom_w = (uint32_t)area_w * 256 / w;
+            uint32_t zoom_h = (uint32_t)area_h * 256 / h;
+            uint32_t zoom   = (zoom_w < zoom_h) ? zoom_w : zoom_h;
+            if (zoom < 16)   zoom = 16;
+            if (zoom > 2048) zoom = 2048;
+
+            lv_img_set_zoom(g_img_obj, 256);
+            lv_img_set_offset_x(g_img_obj, 0);
+            lv_img_set_offset_y(g_img_obj, 0);
+            lv_img_set_angle(g_img_obj, 0);
+            lv_img_set_src(g_img_obj, &g_img_dsc);
+            lv_img_set_zoom(g_img_obj, (uint16_t)zoom);
         }
     }
 
-    lv_res_t info_res = lv_img_decoder_get_info(g_current_path, &header);
-    printf("[PHOTO] %s  info=%d  %dx%d\r\n",
-           g_current_path, (int)info_res, (int)header.w, (int)header.h);
-
-    /* 加载新图，不缩放，先确认能显示 */
-    lv_img_set_zoom(g_img_obj, 256);
-    lv_img_set_offset_x(g_img_obj, 0);
-    lv_img_set_offset_y(g_img_obj, 0);
-    lv_img_set_angle(g_img_obj, 0);
-    lv_img_set_src(g_img_obj, g_current_path);
+    lv_img_decoder_close(&dsc);
 
     lv_obj_align(g_img_obj, LV_ALIGN_CENTER, 0, 0);
     update_arrow_visibility();

@@ -65,7 +65,7 @@
      * 0xC0200000 ~ 0xCFFFFFF  LVGL 堆 (14MB) - 足够显示图片和UI
      * ============================================================
      */
-    #define LV_MEM_SIZE     (14U * 1024U * 1024U)   /* 14MB SDRAM堆 */
+    #define LV_MEM_SIZE     (13U * 1024U * 1024U)   /* 13MB SDRAM堆，末尾1MB留给图片解码缓冲 */
     #define LV_MEM_ADR      0xC0200000UL             /* LTDC帧缓冲(2MB)后，2MB对齐 */
     /* 替换内存分配函数，当LV_MEM_ADR为0时有效 */
     #if LV_MEM_ADR == 0
